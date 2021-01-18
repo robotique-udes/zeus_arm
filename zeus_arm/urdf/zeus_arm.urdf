@@ -1,0 +1,396 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.5.1-0-g916b5db  Build Version: 1.5.7152.31018
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="zeus_arm">
+  <link name="world"/>
+  <joint name="fixed" type="fixed">
+    <parent link="world"/>
+    <child link="base_link"/>
+  </joint>
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-1.40425187791966E-17 -6.56669952542418E-18 0.0625420790069244"
+        rpy="0 0 0" />
+      <mass
+        value="7.04603196242291" />
+      <inertia
+        ixx="0.0428830248523542"
+        ixy="-5.41803301222227E-20"
+        ixz="1.29661912703242E-18"
+        iyy="0.0428830248523542"
+        iyz="-2.39196460527064E-18"
+        izz="0.0614322785331552" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://zeus_arm/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://zeus_arm/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="base_plate">
+    <inertial>
+      <origin
+        xyz="-0.0130197151406295 0.00016673783359167 0.0236083493244784"
+        rpy="0 0 0" />
+      <mass
+        value="1.49099679299515" />
+      <inertia
+        ixx="0.0059912584485333"
+        ixy="-3.38443240882965E-06"
+        ixz="0.000103949215011888"
+        iyy="0.00572702856131155"
+        iyz="-1.33123242154878E-06"
+        izz="0.0107910043642852" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://zeus_arm/meshes/base_plate.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://zeus_arm/meshes/base_plate.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_1"
+    type="continuous">
+    <origin
+      xyz="0 0 0.152539999998558"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="base_plate" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+  <link
+    name="arm">
+    <inertial>
+      <origin
+        xyz="-5.05379205848614E-05 0.364397847135059 0.00390810479445254"
+        rpy="0 0 0" />
+      <mass
+        value="2.47909711560501" />
+      <inertia
+        ixx="0.119871471203825"
+        ixy="-5.11044341870296E-06"
+        ixz="-1.78800543680481E-06"
+        iyy="0.00134266330598186"
+        iyz="0.000395220428916278"
+        izz="0.120009724984221" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://zeus_arm/meshes/arm.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://zeus_arm/meshes/arm.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_2"
+    type="revolute">
+    <origin
+      xyz="0 0 0.064050000082307"
+      rpy="1.5707963267949 0 -1.57067229720919" />
+    <parent
+      link="base_plate" />
+    <child
+      link="arm" />
+    <axis
+      xyz="-0.0129295346677684 0 0.999916410072999" />
+  <dynamics damping="1.0" friction="1.0"/>
+    <limit
+      lower="-2.62"
+      upper="2.62"
+      effort="39"
+      velocity="3.19" />
+  </joint>
+  <link
+    name="forearm">
+    <inertial>
+      <origin
+        xyz="-0.00664 -0.32961 0.020862"
+        rpy="0 0 0" />
+      <mass
+        value="2.5851" />
+      <inertia
+        ixx="0.083851"
+        ixy="-0.0016474"
+        ixz="1.3769E-05"
+        iyy="0.0021071"
+        iyz="0.00068349"
+        izz="0.083475" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://zeus_arm/meshes/forearm.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://zeus_arm/meshes/forearm.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_3"
+    type="revolute">
+    <origin
+      xyz="0 0.733752119827105 0"
+      rpy="0 0 1.59093881590551" />
+    <parent
+      link="arm" />
+    <child
+      link="forearm" />
+    <axis
+      xyz="0.000260415401133654 0.0129269118719003 0.999916410073" />
+    <dynamics damping="1.0" friction="1.0"/>
+    <limit
+      lower="-2.62"
+      upper="2.62"
+      effort="39"
+      velocity="3.19" />
+  </joint>
+  <link
+    name="wrist">
+    <inertial>
+      <origin
+        xyz="0.000224372819499608 -0.0830477174254304 -0.0173520601660857"
+        rpy="0 0 0" />
+      <mass
+        value="0.668441301204721" />
+      <inertia
+        ixx="0.00093843190778967"
+        ixy="1.41242981715693E-19"
+        ixz="-8.09466640350848E-07"
+        iyy="0.000668773652240966"
+        iyz="1.09382796578356E-20"
+        izz="0.00100102222257799" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://zeus_arm/meshes/wrist.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://zeus_arm/meshes/wrist.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_4"
+    type="revolute">
+    <origin
+      xyz="-0.0118069737571342 -0.586093251658263 0.0339822911079425"
+      rpy="0 0 -1.59093881590551" />
+    <parent
+      link="forearm" />
+    <child
+      link="wrist" />
+    <axis
+      xyz="-0.012929534667772 0 0.999916410072999" />
+    <dynamics damping="1.0" friction="1.0"/>
+    <limit
+      lower="-2.62"
+      upper="2.62"
+      effort="39"
+      velocity="3.19" />
+  </joint>
+  <link
+    name="gripper">
+    <inertial>
+      <origin
+        xyz="-1.2279E-05 -1.6491E-06 -0.020947"
+        rpy="0 0 0" />
+      <mass
+        value="0.22738" />
+      <inertia
+        ixx="8.9687E-05"
+        ixy="-1.7952E-09"
+        ixz="2.6762E-09"
+        iyy="0.00013479"
+        iyz="-1.8542E-09"
+        izz="8.5758E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://zeus_arm/meshes/gripper.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://zeus_arm/meshes/gripper.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_5"
+    type="continuous">
+    <origin
+      xyz="0.00016421 -0.15927 -0.012699"
+      rpy="-1.5708 1.5579 0" />
+    <parent
+      link="wrist" />
+    <child
+      link="gripper" />
+    <axis
+      xyz="0 0 1" />
+    <dynamics damping="1.0" friction="1.0"/>
+  </joint>
+  <gazebo>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+	<robotNameSpace>/zeus_arm</robotNameSpace>
+    </plugin>
+  </gazebo>
+
+  <transmission name="tran1">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_1">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="motor1">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="tran2">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_2">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="motor2">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="tran3">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_3">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="motor3">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="tran4">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_4">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="motor4">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="tran5">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_5">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="motor5">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+</robot>

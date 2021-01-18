@@ -1,3 +1,4 @@
+<?xml version='1.0'?>
 <launch>
-  <node name="arm_node" pkg="zeus_arm" type="ArmNode.py" />
+  <node name="arm_node" pkg="zeus_arm" type="arm_node.py" />
 </launch>

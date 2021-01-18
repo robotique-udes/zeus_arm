@@ -17,12 +17,12 @@ Package containing the rover's arm class
 
 import rospy
 import numpy as np
-from ArmClass import RoboticArm
+from arm_class import RoboticArm
 from rospy.numpy_msg import numpy_msg
 from std_msgs.msg import Float32MultiArray
 from geometry_msgs.msg import Twist
 
-class arm_node():
+class ArmNode():
 
 	def __init__(self):
 
@@ -67,7 +67,7 @@ class arm_node():
 if __name__ == '__main__':
 	try:
 		rospy.init_node('arm_node',anonymous=True)
-		node = arm_node()
+		node = ArmNode()
 		rospy.spin()
 
 	except rospy.ROSInterruptionException:

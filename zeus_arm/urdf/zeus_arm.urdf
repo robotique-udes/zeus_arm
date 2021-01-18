@@ -154,16 +154,12 @@
       link="arm" />
     <axis
       xyz="-0.0129295346677684 0 0.999916410072999" />
-  <dynamics damping="5.0" friction="5.0"/>
+  <dynamics damping="10.0" friction="10.0"/>
     <limit
       lower="-2.62"
       upper="2.62"
-      effort="39"
+      effort="39000"
       velocity="3.19" />
-    <safety_controller
-      soft_lower_limit="-2.5"
-      soft_upper_limit="2.5" 
-      k_velocity = "1.0"/>
   </joint>
   <link
     name="forearm">
@@ -217,16 +213,12 @@
       link="forearm" />
     <axis
       xyz="0.000260415401133654 0.0129269118719003 0.999916410073" />
-    <dynamics damping="5.0" friction="5.0"/>
+    <dynamics damping="10.0" friction="10.0"/>
     <limit
       lower="-2.62"
       upper="2.62"
-      effort="39"
+      effort="39000"
       velocity="3.19" />
-    <safety_controller
-      soft_lower_limit="-2.5"
-      soft_upper_limit="2.5"
-      k_velocity = "1.0" />
   </joint>
   <link
     name="wrist">
@@ -280,17 +272,12 @@
       link="wrist" />
     <axis
       xyz="-0.012929534667772 0 0.999916410072999" />
-    <dynamics damping="5.0" friction="5.0"/>
+    <dynamics damping="10.0" friction="10.0"/>
     <limit
       lower="-2.62"
       upper="2.62"
-      effort="39"
-      velocity="3.19" />
-    <safety_controller
-      soft_lower_limit="-2.5"
-      soft_upper_limit="2.5" 
-      k_velocity = "1.0"/>
-    
+      effort="39000"
+      velocity="3.19" />  
   </joint>
   <link
     name="gripper">
@@ -344,7 +331,7 @@
       link="gripper" />
     <axis
       xyz="0 0 1" />
-    <dynamics damping="5.0" friction="5.0"/>
+    <dynamics damping="10.0" friction="10.0"/>
   </joint>
   <gazebo>
     <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">

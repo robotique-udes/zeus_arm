@@ -10,7 +10,13 @@
 ------------------------------------
 
 Package containing the rover's arm class
+
 """
+
+import rospy
+import numpy as np
+from rospy.numpy_msg import numpy_msg
+from std_msgs.msg import Float32MultiArray
 
 class RoboticArm() : 
     """
@@ -25,15 +31,26 @@ class RoboticArm() :
         Constructor method
 
         """
-        # TODO : set exact robot dimensions
-        self.l1 = 1 
+	# Robot geometry
+	self.dof = 5        
+	self.l1 = 1 
         self.l2 = 2
         self.l3 = 3
         self.l4 = 4
         self.l5 = 5
-        
+	self.J = np.zeros((6,self.dof), dtype=np.float32)
+
+	# DH parameters for jacobian
+	self.r = [0,0,0,0,0] #TODO: Define the parameters and document the order in which they are stored in structure
+	self.d = [0,0,0,0,0] #TODO: Define the parameters and document the order in which they are stored in structure
+	self.t = [0,0,0,0,0] #TODO: Define the parameters and document the order in which they are stored in structure
+	self.a = [0,0,0,0,0] #TODO: Define the parameters and document the order in which they are stored in structure
+	
+
+	self.ref_cmd = np.zeros((6,1),dtype=np.float32)
+
     
-    def jacobian_matrix(self, current_config):
+    def jacobian_matrix(self):
         """
         Calculates jacobian matrix 
         
@@ -41,34 +58,35 @@ class RoboticArm() :
         current_config : current robot joint space coordinates                  (list 5x1)
         
         OUTPUTS
-        J : jacobian matrix                                                     (float 3x5)                                           
+        Jac : jacobian matrix                                                    (float 3x5)                                           
         """
-              
-        J = np.zeros((3,5))
-        
-        J[0,0] = 0
-        J[0,1] = 0
-        J[0,2] = 0       
-        J[0,3] = 0
-        J[0,4] = 0
-        
-        J[1,0] = 0
-        J[1,1] = 0
-        J[1,2] = 0       
-        J[1,3] = 0
-        J[1,4] = 0   
-        
-        J[2,0] = 0
-        J[2,1] = 0 
-        J[2,2] = 0        
-        J[2,3] = 0
-        J[2,4] = 0   
+        Jac = np.zeros((6,self.dof), dtype=np.float32)      
+	#i = self.dof-1
+
+	#while i != 0 :
+		#print(i)
+		#T = self.dh2T(self.r[i], self.d[i],self.t[i],self.a[i])
+		#Ji = np.zeros((6,1))
+
+		#pi = np.zeros((3,1))
+		#pi = T[0:3,3]		
+
+		#vec = np.zeros((3,1))
+		#vec[2] = 1
+
+		#Ji[0:3,1] = np.cross(vec,pi)
+		#Ji[3:-1,1] = vec
+		
+		#Jac[0:3,0:3] = T[0:3,0:3] 
+
+		#i = i-1			
+	
   
         
-        return J
+        self.J = Jac
     
 
-    def dh2T( r , d , theta, alpha ):
+    def dh2T(self, r , d , theta, alpha ):
         """  
         Creates a transformtation matrix based on DH parameters
         
@@ -109,7 +127,7 @@ class RoboticArm() :
         T[3][3] = 1
         
        
-        # Sets extremely small valuer to zero
+        # Sets extremely small values to zero
         for i in range(0,4):
             for j in range(0,4):
                 if -1e-10 < T[i][j] < 1e-10:
@@ -119,7 +137,7 @@ class RoboticArm() :
         return T
             
 
-    def dhs2T( r , d , theta, alpha ):
+    def dhs2T(self, r , d , theta, alpha ):
         """
         Creates transformation matrix from end effector base to world base
     
@@ -219,7 +237,7 @@ class RoboticArm() :
        
         return r
         
-    def move_to_home():
+    def move_to_home(self):
         """
         Moves robot arm to rest position
         
@@ -240,9 +258,9 @@ class RoboticArm() :
         # TODO : code that sends joint space coordinates to all motors
     
     
-    def get_joint_config():
+    def get_joint_config(self):
         """
-        Returns current end effector position
+        Returns robot joint configuration
         
         OUTPUTS
         q  : current robot configuration                            (list 5x1)
@@ -250,11 +268,11 @@ class RoboticArm() :
         """
         
         # TODO : Code that reads current robot configuration for all joint motors
-        q = 0
+        q = np.zeros((5,1))
     
         return q
     
-    def get_effector_pos():
+    def get_effector_pos(self):
         """
         Returns current end effector position
         
@@ -266,5 +284,37 @@ class RoboticArm() :
         self.end_effector = forward_kinematics(q)
         
         return end_effector
+
+    def send_speed_command(self,q_dot):
+	"""
+	Sends speed commands to actuators
         
-    # TODO : controller function ?
+        INPUTS
+        q_dot  : desired robot joint speeds     (list 5x1)
+
+        """
+	return true
+
+
+    def speed_controller(self):
+	"""	
+	Returns speed command to send to actuator
+        
+        OUTPUTS
+        q_dot  : speed command for motors     (list 5x1)
+
+
+        """
+	q_dot = np.zeros((5,1))
+	J_inv = np.linalg.pinv(self.J) 
+	q_dot = np.dot(J_inv,self.ref_cmd)
+	
+	cmd_to_motor = q_dot.tolist()
+
+	data_to_send = Float32MultiArray()
+	data_to_send.data = cmd_to_motor
+
+	return data_to_send
+
+	
+        

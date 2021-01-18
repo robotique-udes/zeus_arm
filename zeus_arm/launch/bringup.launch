@@ -1,0 +1,3 @@
+<launch>
+  <node name="arm_node" pkg="zeus_arm" type="ArmNode.py" />
+</launch>

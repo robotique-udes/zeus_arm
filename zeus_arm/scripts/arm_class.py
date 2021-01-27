@@ -23,7 +23,6 @@ class RoboticArm() :
 	5 DOF robot arm
 	
 	"""
-	
 	def __init__(self):
 		"""
 		Constructor method
@@ -58,7 +57,6 @@ class RoboticArm() :
 		T     : Transformation matrix   (float 4x4 (numpy array))
 				
 		"""
-		
 		T = np.zeros((4,4), dtype=np.float32)
 
 		c = lambda ang : np.cos(ang)
@@ -84,13 +82,11 @@ class RoboticArm() :
 		T[3][2] = 0
 		T[3][3] = 1
 		
-	   
 		# Sets extremely small values to zero
 		for i in range(0,4):
 			for j in range(0,4):
 				if -1e-10 < T[i][j] < 1e-10:
 					T[i][j] = 0
-		
 		
 		return T
 			
@@ -109,23 +105,22 @@ class RoboticArm() :
 		WTT : Transformation matrix from tool to world      (float 4x4 (numpy array))
 	
 		"""
-		
 		WTT = np.zeros((4,4), dtype=np.float32)
 		XTY = np.zeros((4,4), dtype=np.float32) 
 		INT = np.array([XTY])
 		
-		# count the number of T matrices to calculate
+		# Count the number of T matrices to calculate
 		parametersCount = len(r)
 		
-		# create array for matrices
+		# Create array for matrices
 		for y in range(0,parametersCount):
 			INT = np.append(INT,[XTY],0)
 			
-		# calculate each T matrix
+		# Calculate each T matrix
 		for x in range(0, parametersCount):
 			INT[x] = self.dh2T(r[x],d[x], theta[x], alpha[x])
 		
-		# first time must be done outside loop, if not WTT will remain a zeros matrix
+		# First time must be done outside loop, if not WTT will remain a zeros matrix
 		WTT = INT[0]
 		for i in range(0,parametersCount-1):
 			WTT = WTT.dot(INT[i+1])    
@@ -143,15 +138,14 @@ class RoboticArm() :
 		r : current robot task coordinates                          (list 3x1)
 
 		"""   
-
-		# angles 
+		# Angles 
 		q1 = self.joint_angles[0]
 		q2 = self.joint_angles[1]
 		q3 = self.joint_angles[2]
 		q4 = self.joint_angles[3]
 		q5 = self.joint_angles[4]
 			  
-		# update t_dh with current config 
+		# Update t_dh with current config 
 		self.t_dh[1] = self.joint_angles[0]
 		self.t_dh[2] = self.joint_angles[1] + np.pi/2
 		self.t_dh[3] = self.joint_angles[2]
@@ -164,6 +158,7 @@ class RoboticArm() :
 		r = np.array([WTG[0][3],WTG[1][3],WTG[2][3]]).T
 	   
 		return r
+
 
 	def jacobian_matrix(self):
 		"""
@@ -185,10 +180,7 @@ class RoboticArm() :
 		a = self.a_dh[:-1]
 		e_T_f = self.dh2T(self.r_dh[-1], self.d_dh[-1], self.t_dh[-1], self.a_dh[-1])
 
-		for i in range(self.dof-1, -1 , -1):
-		
-			# initialise Jacobian to 6xdof matrix
-			Jac = np.zeros((6,self.dof), dtype=np.float32)
+		for i in range(self.dof-1, -1, -1):
 
 			# Slice arrays for necessary parameters
 			r_loop = self.r_dh[i:]
@@ -196,15 +188,14 @@ class RoboticArm() :
 			t_loop = self.t_dh[i:]
 			a_loop = self.a_dh[i:]
 			
-			# step 1
+			# Step 1
 			Ji = np.zeros(6, dtype=np.float32).T
 
-			# step 2
+			# Step 2
 			n_T_e = self.dhs2T(r_loop, d_loop, t_loop, a_loop)
 			T = np.matmul(n_T_e,e_T_f)
 
-			
-			# step 3	
+			# Step 3	
 			pi = np.zeros(3, dtype=np.float32)
 			pi = T[0:3,3]		
 			vec = np.zeros(3, dtype=np.float32)
@@ -212,18 +203,17 @@ class RoboticArm() :
 			Ji[0:3] = np.cross(vec.T,pi.T, axis = 0)
 			Ji[3:] = vec
 
-			# step 4
+			# Step 4
 			Jac[:,i] = Ji
 
-			# step 5
+			# Step 5
 			rmat = np.zeros((6,6), dtype=np.float32)
 			rmat[0:3,0:3] = T[0:3,0:3] 
 			rmat[3:,3:] = T[0:3,0:3] 
 
-			# step 6
+			# Step 6
 			Jac = rmat.dot(Jac)
 
-			
 		self.J = Jac
 
 		
@@ -232,9 +222,7 @@ class RoboticArm() :
 		Moves robot arm to rest position
 		
 		"""
-		
 		q = [0,0,0,0,0,0] # set defined angles for home position
-		
 		move_to(q)
 				
 	def move_to(self,q):
@@ -256,12 +244,12 @@ class RoboticArm() :
 		q  : current robot configuration                            (list 5x1)
 
 		"""
-		
 		# TODO : Code that reads current robot configuration for all joint motors
 		q = np.zeros((5,1), dtype=np.float32)
 	
 		return q
 	
+
 	def get_effector_pos(self):
 		"""
 		Returns current end effector position
@@ -287,15 +275,13 @@ class RoboticArm() :
 		"""
 		#rospy.loginfo("Inside control loop")
 		#rospy.loginfo(self.ref_cmd)
+		dt = 1/40
 		q_dot = np.zeros((5,1), dtype = np.float32)
 		J_inv = np.linalg.pinv(self.J) 
 		q_dot = np.dot(J_inv,self.ref_cmd)
+		q = self.joint_angles + q_dot*0.5
 
-
-		cmd_to_motor = (q_dot).flatten().tolist()
-		
-
-
+		cmd_to_motor = (q).flatten().tolist()
 		return cmd_to_motor
 
 	

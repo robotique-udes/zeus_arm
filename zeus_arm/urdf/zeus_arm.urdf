@@ -154,7 +154,7 @@
       link="arm" />
     <axis
       xyz="-0.0129295346677684 0 0.999916410072999" />
-  <dynamics damping="10.0" friction="10.0"/>
+  <dynamics damping="1.0" friction="20.0"/>
     <limit
       lower="-2.62"
       upper="2.62"
@@ -331,7 +331,7 @@
       link="gripper" />
     <axis
       xyz="0 0 1" />
-    <dynamics damping="10.0" friction="10.0"/>
+    <dynamics damping="1.0" friction="5.0"/>
   </joint>
   <gazebo>
     <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">

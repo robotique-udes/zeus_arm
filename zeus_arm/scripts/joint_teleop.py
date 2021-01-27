@@ -39,11 +39,11 @@ class JointTeleopNode():
         self.last_change = time.time()
 
         # Init publishers
-        self.j1_pub = rospy.Publisher('/zeus_arm/joint_1_velocity_controller/command', Float64, queue_size=10)
-        self.j2_pub = rospy.Publisher('/zeus_arm/joint_2_velocity_controller/command', Float64, queue_size=10)
-        self.j3_pub = rospy.Publisher('/zeus_arm/joint_3_velocity_controller/command', Float64, queue_size=10)
-        self.j4_pub = rospy.Publisher('/zeus_arm/joint_4_velocity_controller/command', Float64, queue_size=10)
-        self.j5_pub = rospy.Publisher('/zeus_arm/joint_5_velocity_controller/command', Float64, queue_size=10)
+        self.j1_pub = rospy.Publisher('/zeus_arm/joint_1_position_controller/command', Float64, queue_size=10)
+        self.j2_pub = rospy.Publisher('/zeus_arm/joint_2_position_controller/command', Float64, queue_size=10)
+        self.j3_pub = rospy.Publisher('/zeus_arm/joint_3_position_controller/command', Float64, queue_size=10)
+        self.j4_pub = rospy.Publisher('/zeus_arm/joint_4_position_controller/command', Float64, queue_size=10)
+        self.j5_pub = rospy.Publisher('/zeus_arm/joint_5_position_controller/command', Float64, queue_size=10)
 
         # Init command loop 
         rospy.Timer(rospy.Duration(1.0/10), self.send_cmd_callback)

@@ -18,7 +18,7 @@ ROS Node to teleoperate the arm joint by joint
 import time
 import rospy
 from std_msgs.msg import Float64
-from sensor_msgs.msg import Joy
+from sensor_msgs.msg import Joy, JointState
 
 
 class JointTeleopNode():
@@ -33,7 +33,8 @@ class JointTeleopNode():
         self.curr_joint = 0
         self.num_joints = 5 
 
-        # Init commands in rad/s
+        # Init commands in rad
+        self.curr_pos = [0.0, 0.0, 0.0, 0.0, 0.0]
         self.cmd = [0.0, 0.0, 0.0, 0.0, 0.0]
         self.print_state()
         self.last_change = time.time()
@@ -50,6 +51,9 @@ class JointTeleopNode():
 
         # Subscribe to joystick
         self.joy_sub = rospy.Subscriber('/joy', Joy, self.joy_callback)
+
+        # Subscribe to arm state
+        self.joy_sub = rospy.Subscriber('/zeus_arm/joint_states', JointState, self.state_callback)
 
 
     def print_state(self):
@@ -80,6 +84,18 @@ class JointTeleopNode():
             self.print_state()
 
 
+    def state_callback(self, msg):
+        '''
+        Callback from arm
+        ----------
+        Parameters
+        ----------
+        msg: JointState
+            Message from arm (sim or real)
+        '''
+        self.curr_pos = list(msg.position)
+
+
     def joy_callback(self, msg):
         '''
         Callback from joystick
@@ -96,9 +112,8 @@ class JointTeleopNode():
             self.change_joint(1)
 
         # Save command
-        cmd = msg.axes[1] * 2
-        self.cmd = [0.0, 0.0, 0.0, 0.0, 0.0]
-        self.cmd[self.curr_joint] = cmd
+        cmd = msg.axes[1]
+        self.cmd[self.curr_joint] = self.curr_pos[self.curr_joint] + 0.3*cmd
 
 
     def send_cmd_callback(self, evt):

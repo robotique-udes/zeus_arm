@@ -143,6 +143,7 @@ class RoboticArm() :
 		r : current robot task coordinates                          (list 3x1)
 
 		"""   
+
 		# angles 
 		q1 = self.joint_angles[0]
 		q2 = self.joint_angles[1]

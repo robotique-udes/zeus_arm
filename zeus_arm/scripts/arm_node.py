@@ -22,6 +22,7 @@ from rospy.numpy_msg import numpy_msg
 from geometry_msgs.msg import Twist
 from zeus_arm.msg import Floats
 from std_msgs.msg import Float32MultiArray
+from sensor_msgs.msg import JointState
 
 class ArmNode():
 
@@ -30,13 +31,11 @@ class ArmNode():
 		rospy.loginfo("Initialized node")
 		self.robot = RoboticArm()
 		self.pub_cmd = rospy.Publisher('/motor_cmd', Float32MultiArray, queue_size=10)
+		rospy.Subscriber("/teleop_cmd", Twist, self.set_joint_cmd)
+		rospy.Subscriber("/zeus_arm/joint_states", JointState ,self.update_joint_states)
 
-		rospy.Subscriber("/teleop_cmd",Twist, self.set_joint_cmd)
-
-		# Control loop @100Hz
-		rospy.Timer(rospy.Duration(1.0/100),self.speed_controller)
-		# Jacobian matrix @200Hz
-		rospy.Timer(rospy.Duration(1.0/200),self.jacobian_matrix)
+		# Control loop @40Hz
+		rospy.Timer(rospy.Duration(1.0/40),self.speed_controller)
 
 	def speed_controller(self,event):
 		cmd = Float32MultiArray()
@@ -44,7 +43,7 @@ class ArmNode():
 		self.pub_cmd.publish(cmd)
 
 
-	def jacobian_matrix(self,event):
+	def jacobian_matrix(self):
 		self.robot.jacobian_matrix()
 
 	def set_joint_cmd(self,msg):
@@ -61,6 +60,10 @@ class ArmNode():
 		# Set received command
 		self.robot.ref_cmd = cmd
 
+	def update_joint_states(self, msg):
+
+		self.joint_angles = list(msg.position)
+		self.jacobian_matrix()
 
 if __name__ == '__main__':
 	try:

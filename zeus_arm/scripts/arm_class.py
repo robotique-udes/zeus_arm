@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # -*- coding: utf-8 -*-
 
 # Created on Thu May 28 14:40:02 2020
@@ -38,9 +40,10 @@ class RoboticArm() :
 		self.a_dh = np.array([0.,      np.pi/2,  0.,      0.,      np.pi/2, 0.])
 
 		# Robot state
-		self.ref_cmd = np.zeros((6,1),dtype=np.float32)
-		self.J = np.zeros((6,self.dof), dtype=np.float32)
-		self.joint_angles = np.zeros(5, dtype=np.float32)
+		self.ref_cmd = np.zeros((6,1), dtype=np.float64)
+		self.old_cmd = np.array([0.0, 0.0, 1.57, 0.0, 0.0], dtype=np.float64)
+		self.J = np.zeros((6,self.dof), dtype=np.float64)
+		self.joint_angles = np.zeros(5, dtype=np.float64)
 
 
 	def dh2T(self, r , d , theta, alpha ):
@@ -57,7 +60,7 @@ class RoboticArm() :
 		T     : Transformation matrix   (float 4x4 (numpy array))
 				
 		"""
-		T = np.zeros((4,4), dtype=np.float32)
+		T = np.zeros((4,4), dtype=np.float64)
 
 		c = lambda ang : np.cos(ang)
 		s = lambda ang : np.sin(ang)
@@ -105,8 +108,8 @@ class RoboticArm() :
 		WTT : Transformation matrix from tool to world      (float 4x4 (numpy array))
 	
 		"""
-		WTT = np.zeros((4,4), dtype=np.float32)
-		XTY = np.zeros((4,4), dtype=np.float32) 
+		WTT = np.zeros((4,4), dtype=np.float64)
+		XTY = np.zeros((4,4), dtype=np.float64) 
 		INT = np.array([XTY])
 		
 		# Count the number of T matrices to calculate
@@ -138,12 +141,6 @@ class RoboticArm() :
 		r : current robot task coordinates                          (list 3x1)
 
 		"""   
-		# Angles 
-		q1 = self.joint_angles[0]
-		q2 = self.joint_angles[1]
-		q3 = self.joint_angles[2]
-		q4 = self.joint_angles[3]
-		q5 = self.joint_angles[4]
 			  
 		# Update t_dh with current config 
 		self.t_dh[1] = self.joint_angles[0]
@@ -170,7 +167,7 @@ class RoboticArm() :
 		OUTPUTS
 		Jac : jacobian matrix (float 3x5)                                           
 		"""
-		Jac = np.zeros((6,self.dof), dtype=np.float32)      
+		Jac = np.zeros((6,self.dof), dtype=np.float64)      
 
 
 		# Slice arrays for necessary parameters
@@ -183,22 +180,22 @@ class RoboticArm() :
 		for i in range(self.dof-1, -1, -1):
 
 			# Slice arrays for necessary parameters
-			r_loop = self.r_dh[i:]
-			d_loop = self.d_dh[i:]
-			t_loop = self.t_dh[i:]
-			a_loop = self.a_dh[i:]
+			r_loop = r[i:]
+			d_loop = d[i:]
+			t_loop = t[i:]
+			a_loop = a[i:]
 			
 			# Step 1
-			Ji = np.zeros(6, dtype=np.float32).T
+			Ji = np.zeros(6, dtype=np.float64).T
 
 			# Step 2
 			n_T_e = self.dhs2T(r_loop, d_loop, t_loop, a_loop)
 			T = np.matmul(n_T_e,e_T_f)
 
 			# Step 3	
-			pi = np.zeros(3, dtype=np.float32)
+			pi = np.zeros(3, dtype=np.float64)
 			pi = T[0:3,3]		
-			vec = np.zeros(3, dtype=np.float32)
+			vec = np.zeros(3, dtype=np.float64)
 			vec[2] = 1
 			Ji[0:3] = np.cross(vec.T,pi.T, axis = 0)
 			Ji[3:] = vec
@@ -207,12 +204,15 @@ class RoboticArm() :
 			Jac[:,i] = Ji
 
 			# Step 5
-			rmat = np.zeros((6,6), dtype=np.float32)
-			rmat[0:3,0:3] = T[0:3,0:3] 
-			rmat[3:,3:] = T[0:3,0:3] 
+			rmat = np.zeros((6,6), dtype=np.float64)
+			Tr = self.dh2T(self.r_dh[i], self.d_dh[i], self.t_dh[i], self.a_dh[i])
+			rmat[0:3,0:3] = Tr[0:3,0:3] 
+			rmat[3:,3:] = Tr[0:3,0:3] 
 
 			# Step 6
 			Jac = rmat.dot(Jac)
+
+			print(Jac)
 
 		self.J = Jac
 
@@ -245,7 +245,7 @@ class RoboticArm() :
 
 		"""
 		# TODO : Code that reads current robot configuration for all joint motors
-		q = np.zeros((5,1), dtype=np.float32)
+		q = np.zeros((5,1), dtype=np.float64)
 	
 		return q
 	
@@ -273,16 +273,42 @@ class RoboticArm() :
 
 
 		"""
-		#rospy.loginfo("Inside control loop")
-		#rospy.loginfo(self.ref_cmd)
-		dt = 1/40
-		q_dot = np.zeros((5,1), dtype = np.float32)
+		q_dot = np.zeros((5,1), dtype = np.float64)
 		J_inv = np.linalg.pinv(self.J) 
 		q_dot = np.dot(J_inv,self.ref_cmd)
-		q = self.joint_angles + q_dot*0.5
+
+		#q = self.calculate_command(q_dot)
+		if np.count_nonzero(q_dot) <= 0.01:
+			q = self.old_cmd
+		else:
+			q = self.joint_angles + q_dot*0.5
+			if (np.count_nonzero(q_dot) > 0.01) and (np.count_nonzero(q_dot) < 5.0):
+				indices = np.where(q_dot == 0.0)[0]
+				for i in indices:
+					q[i] = self.old_cmd[i]
+        	self.old_cmd = q 
+            
 
 		cmd_to_motor = (q).flatten().tolist()
 		return cmd_to_motor
 
-	
+	def calculate_command(self, q_dot):
+
+		if (np.count_nonzero(q_dot) - 5 <= 0.01):
+			q = self.joint_angles + q_dot*0.5
+        	self.old_cmd = q 
+
+		if (np.count_nonzero(q_dot) <= 0.01):
+			q = self.old_cmd
+
+		else:
+			indices = np.where(q_dot == 0.0)[0]
+			q = self.joint_angles + q_dot*0.5
+			for i in indices:
+				q[i] = self.old_cmd[i]
+			self.old_cmd = q 
+
+		
+		return q
+
 		

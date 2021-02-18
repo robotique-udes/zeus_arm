@@ -21,7 +21,7 @@ from arm_class import RoboticArm
 from rospy.numpy_msg import numpy_msg
 from geometry_msgs.msg import Twist
 from zeus_arm.msg import Floats
-from std_msgs.msg import Float32MultiArray, Float64
+from std_msgs.msg import Float64
 from sensor_msgs.msg import JointState
 
 class ArmNode():
@@ -43,7 +43,7 @@ class ArmNode():
         self.j5_pub = rospy.Publisher('/zeus_arm/joint_5_position_controller/command', Float64, queue_size=10)
         
         # Control loop @40Hz
-        rospy.Timer(rospy.Duration(1.0/40),self.speed_controller)
+        rospy.Timer(rospy.Duration(1.0/50),self.speed_controller)
 
 
     def speed_controller(self,event):
@@ -71,7 +71,7 @@ class ArmNode():
     def set_joint_cmd(self,msg):
 
         # Create command structure
-        cmd = np.zeros((6,1),dtype=np.float32)
+        cmd = np.zeros((6,1),dtype=np.float64)
         cmd[0] = msg.linear.x
         cmd[1] = msg.linear.y
         cmd[2] = msg.linear.z
@@ -86,6 +86,12 @@ class ArmNode():
     def update_joint_states(self, msg):
 
         self.robot.joint_angles = list(msg.position)
+        self.robot.t_dh[0] = 0.
+        self.robot.t_dh[1] = self.robot.joint_angles[0]
+        self.robot.t_dh[2] = self.robot.joint_angles[1] + np.pi/2
+        self.robot.t_dh[3] = self.robot.joint_angles[2]
+        self.robot.t_dh[4] = self.robot.joint_angles[4] - np.pi/2
+        self.robot.t_dh[5] = 0.
         self.jacobian_matrix()
 
 

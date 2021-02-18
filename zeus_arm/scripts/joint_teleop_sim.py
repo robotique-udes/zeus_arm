@@ -2,7 +2,7 @@
 
 # -*- coding: utf-8 -*-
 
-# Created on January 27 2021
+# Created on January 18 2021
 # @author: Simon Chamorro       simon.chamorro@usherbrooke.ca
 
 
@@ -11,40 +11,44 @@
 
 ------------------------------------
 
-ROS Node to teleoperate the arm in caretsian position
+ROS Node to teleoperate the arm joint by joint
 
 """
 
 import time
 import rospy
+from std_msgs.msg import Float64
 from sensor_msgs.msg import Joy, JointState
-from geometry_msgs.msg import Twist
 
 
-class PosTeleopNode():
+class JointTeleopNode():
     def __init__(self):
         '''
         Node class to teleoperate arm joint by joint
         '''
-        rospy.init_node('pos_teleop_arm', anonymous=False)
+        rospy.init_node('joint_teleop_arm', anonymous=False)
         rospy.on_shutdown(self.on_shutdown)
 
-        # Set 1st axis
-        self.curr_axis = 0
-        self.num_axis = 6 
-        self.axes = ['x', 'y', 'z', 'qx', 'qy', 'qz']
+        # Set 1st joint
+        self.curr_joint = 0
+        self.num_joints = 5 
 
         # Init commands in rad
-        self.curr_pos = [0.0, 0.0, 1.57, 1.57, 0.0]
-        self.cmd = Twist()
-        #self.print_state()
+        self.curr_pos = [0.0, 0.0, 0.0, 0.0, 0.0]
+        self.cmd = [0.0, 0.0, 0.0, 0.0, 0.0]
+        self.old_cmd = [0.0, 0.0, 0.0, 0.0, 0.0]
+        self.print_state()
         self.last_change = time.time()
 
         # Init publishers
-        self.twist_pub = rospy.Publisher('/zeus_arm/cmd_vel', Twist, queue_size=10)
+        self.j1_pub = rospy.Publisher('/zeus_arm/joint_1_position_controller/command', Float64, queue_size=10)
+        self.j2_pub = rospy.Publisher('/zeus_arm/joint_2_position_controller/command', Float64, queue_size=10)
+        self.j3_pub = rospy.Publisher('/zeus_arm/joint_3_position_controller/command', Float64, queue_size=10)
+        self.j4_pub = rospy.Publisher('/zeus_arm/joint_4_position_controller/command', Float64, queue_size=10)
+        self.j5_pub = rospy.Publisher('/zeus_arm/joint_5_position_controller/command', Float64, queue_size=10)
 
         # Init command loop 
-        rospy.Timer(rospy.Duration(1.0/50), self.send_cmd_callback)
+        rospy.Timer(rospy.Duration(1.0/10), self.send_cmd_callback)
 
         # Subscribe to joystick
         self.joy_sub = rospy.Subscriber('/joy', Joy, self.joy_callback)
@@ -57,12 +61,12 @@ class PosTeleopNode():
         '''
         Prints state for user.
         '''
-        print("Controlling axis: " + self.axes[self.curr_axis])
+        print("Controlling joint: " + str(self.curr_joint + 1))
 
 
-    def change_axis(self, direction):
+    def change_joint(self, direction):
         '''
-        Change current axis
+        Change current joint
         ----------
         Parameters
         ----------
@@ -71,12 +75,12 @@ class PosTeleopNode():
         '''
         if time.time() - self.last_change > 0.3:
             if direction >= 1:
-                new_axis = (self.curr_axis + 1) % self.num_axis 
-                self.curr_axis = new_axis
+                new_joint = (self.curr_joint + 1) % self.num_joints 
+                self.curr_joint = new_joint
                 self.last_change = time.time()
             else:
-                new_axis = (self.curr_axis - 1) % self.num_axis 
-                self.curr_axis = new_axis
+                new_joint = (self.curr_joint - 1) % self.num_joints 
+                self.curr_joint = new_joint
                 self.last_change = time.time()
             self.print_state()
 
@@ -103,40 +107,19 @@ class PosTeleopNode():
             Message from joystick
         '''
         # Change joint if necessary
-        #if msg.buttons[0]:
-        #    self.change_axis(-1)
-        #elif msg.buttons[3]:
-        #    self.change_axis(1)
-
+        if msg.buttons[0]:
+            self.change_joint(-1)
+        elif msg.buttons[3]:
+            self.change_joint(1)
 
         # Save command
-        cmd_x = msg.axes[1]
-        cmd_y = msg.axes[0]
-        cmd_z = msg.axes[4]
-        cmd_qx = msg.axes[7]
-        cmd_qy = msg.axes[6]
-        cmd_qz = msg.buttons[1]
-        self.cmd = Twist()
-        self.cmd.linear.x = cmd_x
-        self.cmd.linear.y = cmd_y
-        self.cmd.linear.z = cmd_z
-        self.cmd.angular.x = cmd_qx
-        self.cmd.angular.y = cmd_qy
-        self.cmd.angular.z = cmd_qz
+        cmd = msg.axes[1]
         
-        #if self.curr_axis == 0:
-         #   self.cmd.linear.x = cmd
-        #elif self.curr_axis == 1:
-         #   self.cmd.linear.y = cmd
-        #elif self.curr_axis == 2:
-         #   self.cmd.linear.z = cmd
-        #elif self.curr_axis == 3:
-         #   self.cmd.angular.x = cmd
-        #elif self.curr_axis == 4:
-         #   self.cmd.angular.y = cmd
-        #elif self.curr_axis == 5:
-         #   self.cmd.angular.z = cmd
-
+        if abs(cmd) <= 0.01:
+            self.cmd[self.curr_joint] = self.old_cmd[self.curr_joint]
+        else:
+            self.cmd[self.curr_joint] = self.curr_pos[self.curr_joint] + 0.3*cmd
+            self.old_cmd[self.curr_joint] = self.cmd[self.curr_joint]
 
     def send_cmd_callback(self, evt):
         '''
@@ -149,21 +132,25 @@ class PosTeleopNode():
         '''
         Publishes commands
         '''
-        self.twist_pub.publish(self.cmd)
+        self.j1_pub.publish(self.cmd[0])
+        self.j2_pub.publish(self.cmd[1])
+        self.j3_pub.publish(self.cmd[2])
+        self.j4_pub.publish(self.cmd[3])
+        self.j5_pub.publish(self.cmd[4])
 
 
     def on_shutdown(self):
         '''
         Set commands to 0 at shutdown
         '''
-        self.cmd = Twist()
+        self.cmd = [0.0, 0.0, 0.0, 0.0, 0.0]
         self.send_cmd()
 
 
 
 if __name__ == '__main__':
     try:
-        node = PosTeleopNode()
+        node = JointTeleopNode()
         rospy.spin()
     except rospy.ROSInterruptException:
         pass

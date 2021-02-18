@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="zeus_arm" type="serial_test.py" name="comm_node" output="screen"/>
+  <node pkg="rosserial_python" type="serial_node.py" name="serial_node" args="/dev/ttyUSB1" output="screen" /> 
+</launch>

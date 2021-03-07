@@ -3,15 +3,15 @@
 # -*- coding: utf-8 -*-
 
 # Created on Sat November 14 16:07:35 2020
-# @author: santi
+# @author: Santiago Moya        santiago.moya@usherbrooke.ca
 
 
 """
-@package robot_arm
+@package zeus_arm
 
 ------------------------------------
 
-Package containing the rover's arm class
+ROS node containing robot arm instance 
 
 """
 
@@ -27,6 +27,9 @@ from sensor_msgs.msg import JointState
 class ArmNode():
 
     def __init__(self):
+        '''
+        Node class for robot arm instance
+        '''
 
         rospy.loginfo("Initialized node")
         self.robot = RoboticArm()
@@ -48,7 +51,9 @@ class ArmNode():
 
     def speed_controller(self,event):
         """
+        Velocity control loop
         """
+        # TODO : Move Arduino position publishing inside de command callback  
         cmd = self.robot.speed_controller()
         self.send_cmd(cmd)
 
@@ -63,12 +68,15 @@ class ArmNode():
         self.j4_pub.publish(cmd[3])
         self.j5_pub.publish(cmd[4])
 
-
-    def jacobian_matrix(self):
-        self.robot.jacobian_matrix()
-
-
     def set_joint_cmd(self,msg):
+        '''
+        Callback from joystick
+        ----------
+        Parameters
+        ----------
+        msg: Twist
+             Cartesian command for end effector
+        '''
 
         # Create command structure
         cmd = np.zeros((6,1),dtype=np.float64)
@@ -79,22 +87,28 @@ class ArmNode():
         cmd[4] = msg.angular.y
         cmd[5] = msg.angular.z 
 
-        # Set received command
         self.robot.ref_cmd = cmd
 
-
     def update_joint_states(self, msg):
+        '''
+        Callback from encoders
+        ----------
+        Parameters
+        ----------
+        msg: JointState
+             States for all joints commind from simulation
+        '''
 
-        self.robot.joint_angles = list(msg.position)
+        # Update joint angles
+        self.robot.joint_angles = np.array(list(msg.position))
+        
+        # Update theta parameters
         self.robot.t_dh[0] = 0.
         self.robot.t_dh[1] = self.robot.joint_angles[0]
         self.robot.t_dh[2] = self.robot.joint_angles[1] + np.pi/2
         self.robot.t_dh[3] = self.robot.joint_angles[2]
-        self.robot.t_dh[4] = self.robot.joint_angles[4] - np.pi/2
-        self.robot.t_dh[5] = 0.
-        self.jacobian_matrix()
-
-
+        self.robot.t_dh[4] = self.robot.joint_angles[3] - np.pi/2
+        self.robot.t_dh[5] = self.robot.joint_angles[4]
 
 if __name__ == '__main__':
     try:

@@ -4,6 +4,7 @@
 
 # Created on January 18 2021
 # @author: Simon Chamorro       simon.chamorro@usherbrooke.ca
+#          Santiago Moya        santiago.moya@usherbrooke.ca
 
 
 """
@@ -38,7 +39,7 @@ class JointTeleopNode():
         self.curr_pos = [0.0, 0.0, 0.0, 0.0, 0.0]
         self.old_cmd = [0.0, 0.0, 0.0, 0.0, 0.0]
         self.cmd = [0.0, 0.0, 0.0, 0.0, 0.0]
-        self.cmd_j2j3 = [0.0, 0.0]
+        self.cmd_j23 = [0.0, 0.0]
         self.print_state()
         self.last_change = time.time()
 
@@ -50,7 +51,7 @@ class JointTeleopNode():
         self.j5_pub = rospy.Publisher('/zeus_arm/joint_5_position_controller/command', Float32, queue_size=10)
 
         # Init command loop 
-        rospy.Timer(rospy.Duration(1.0/100), self.send_cmd_callback)
+        rospy.Timer(rospy.Duration(1.0/50), self.send_cmd_callback)
 
         # Subscribe to joystick
         self.joy_sub = rospy.Subscriber('/joy', Joy, self.joy_callback)
@@ -98,9 +99,8 @@ class JointTeleopNode():
         Parameters
         ----------
         msg: JointState
-            Message from arm (sim or real)
+            Message from arm (real)
         '''
-        #self.curr_pos = list(msg.position)
         self.curr_pos[0] = msg.data
 
     def j2_state_callback(self, msg):
@@ -110,9 +110,8 @@ class JointTeleopNode():
         Parameters
         ----------
         msg: JointState
-            Message from arm (sim or real)
+            Message from arm (real)
         '''
-        #self.curr_pos = list(msg.position)
         self.curr_pos[1] = msg.data
 
     def j3_state_callback(self, msg):
@@ -122,9 +121,8 @@ class JointTeleopNode():
         Parameters
         ----------
         msg: JointState
-            Message from arm (sim or real)
+            Message from arm (real)
         '''
-        #self.curr_pos = list(msg.position)
         self.curr_pos[2] = msg.data
 
     def j4_state_callback(self, msg):
@@ -134,9 +132,8 @@ class JointTeleopNode():
         Parameters
         ----------
         msg: JointState
-            Message from arm (sim or real)
+            Message from arm (real)
         '''
-        #self.curr_pos = list(msg.position)
         self.curr_pos[3] = msg.data
 
     def j5_state_callback(self, msg):
@@ -146,9 +143,8 @@ class JointTeleopNode():
         Parameters
         ----------
         msg: JointState
-            Message from arm (sim or real)
+            Message from arm (real)
         '''
-        #self.curr_pos = list(msg.position)
         self.curr_pos[4] = msg.data
 
     def joy_callback(self, msg):
@@ -166,16 +162,17 @@ class JointTeleopNode():
         elif msg.buttons[3]:
             self.change_joint(1)
 
-        # Save command
+        # Rotating or linear joint?
         if self.curr_joint != 1 and self.curr_joint != 2:
             if self.curr_joint == 4 : 
                 cmd = (msg.axes[1]) * 25
             else :
                 cmd = (msg.axes[1]) * 5
 
+            # To make it as valocity control
             self.cmd[self.curr_joint] = self.curr_pos[self.curr_joint] + 0.5*cmd
         else:
-            self.cmd_j2j3 = np.array([self.curr_joint + 1, msg.axes[1]]).flatten().tolist()
+            self.cmd_j23 = np.array([self.curr_joint + 1, msg.axes[1]]).flatten().tolist()
 
 
     def send_cmd_callback(self, evt):
@@ -188,7 +185,7 @@ class JointTeleopNode():
 
     def send_cmd(self):
         '''
-        Publishes commands
+        Publishes commands to each joint
         '''
         if self.curr_joint == 0:
             if (abs(self.old_cmd[0] - self.cmd[0]) > 0.4):
@@ -199,13 +196,12 @@ class JointTeleopNode():
 
         if self.curr_joint == 1:
             data = Float32MultiArray()
-            data.data = self.cmd_j2j3
+            data.data = self.cmd_j23
             self.j2_pub.publish(data)
  
-
         if self.curr_joint == 2:
             data = Float32MultiArray()
-            data.data = self.cmd_j2j3
+            data.data = self.cmd_j23
             self.j2_pub.publish(data)
 
         if self.curr_joint == 3:

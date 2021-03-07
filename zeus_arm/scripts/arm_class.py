@@ -3,20 +3,21 @@
 # -*- coding: utf-8 -*-
 
 # Created on Thu May 28 14:40:02 2020
-# @author: santi
+# @author: Santiago Moya		santiago.moya@usherbrooke.ca
 
 
 """
-@package robot_arm
+@package zeus_arm
 
 ------------------------------------
 
-Package containing the rover's arm class
+Rover's arm class
 
 """
 
 import rospy
 import numpy as np
+from ddynamic_reconfigure_python.ddynamic_reconfigure import DDynamicReconfigure
 
 class RoboticArm() : 
 	"""
@@ -32,19 +33,68 @@ class RoboticArm() :
 		"""
 		# Robot geometry
 		self.dof = 5
+		self.l1 = 0.21653
+		self.l2 = 0.95034
+		self.l3 = 1.53694
+		self.l4 = 0.25664
 
 		# DH parameters are in order from world to end-effector        
 		self.r_dh = np.array([0.,      0.,       0.73375, 0.5866,  0.,      0.]) 
-		self.d_dh = np.array([0.15255, 0.06405,  0.,      0.,      0.,      0.25664])
+		self.d_dh = np.array([0.15255, 0.06405,  0.,      0.,      0.01349,      0.25664])
 		self.t_dh = np.array([0.,      0.,       0.,      0.,      0.,      0.])
 		self.a_dh = np.array([0.,      np.pi/2,  0.,      0.,      np.pi/2, 0.])
 
 		# Robot state
 		self.ref_cmd = np.zeros((6,1), dtype=np.float64)
-		self.old_cmd = np.array([0.0, 0.0, 1.57, 0.0, 0.0], dtype=np.float64)
-		self.J = np.zeros((6,self.dof), dtype=np.float64)
+		self.old_cmd = np.array([[0.0], [0.0], [1.57], [1.57], [0.0]],dtype=np.float64)
+
+
+		# Skip control loop or not
+		self.skip_loop = False
+
+		self.intJ = np.zeros((6,self.dof), dtype=np.float64)
 		self.joint_angles = np.zeros(5, dtype=np.float64)
 
+		# Initialize configurable params
+		# Create a DynamicDynamicReconfigure Server
+		#self.ddr = DDynamicReconfigure("zeus_arm")
+
+		# Add variables to ddr(name, description, default value, min, max, edit_method)        
+		# Model Settings
+		#self.ddr.add_variable("velocity_gain", "int", 1, 1, 10)
+		#self.inputs = ['Joint', 'Cartesian']
+		#self.input_enum = self.ddr.enum([ self.ddr.const("Cartesian", "int", 0, "Cartesian"),
+		#								  self.ddr.const("Joint", "int", 1, "Joint")],
+		#								 "Input enum for arm control mode")
+		#self.ddr.add_variable("control_mode", "desired control mode", 0, 0, 3, edit_method=self.input_enum)
+
+
+		# Start Server
+		#self.ddr.start(self.dynamic_reconfigure_callback)
+		#rospy.sleep(1)
+
+
+	def dynamic_reconfigure_callback(self, config, level):
+
+		'''
+		Updates parameters value when changed by the user.
+		----------
+		Parameters
+		----------
+		config: dict
+			Keys are param names and values are param values
+		level: Unused
+		-------
+		Returns
+		-------
+		config: dict
+			Keys are param names and values are param values
+		'''
+		# Update variables
+		var_names = self.ddr.get_variable_names()
+		for var_name in var_names:
+			self.__dict__[var_name] = config[var_name]
+		return config
 
 	def dh2T(self, r , d , theta, alpha ):
 		"""  
@@ -130,30 +180,31 @@ class RoboticArm() :
 		
 		return WTT
 		
-	def forward_kinematics(self,current_config):
+	def forward_kinematics(self):
 		"""
 		Calculates end effector position
-		
-		INPUTS
-		current_config  : current robot joint space coordinates     (list 5x1)
 		
 		OUTPUTS
 		r : current robot task coordinates                          (list 3x1)
 
 		"""   
-			  
-		# Update t_dh with current config 
-		self.t_dh[1] = self.joint_angles[0]
-		self.t_dh[2] = self.joint_angles[1] + np.pi/2
-		self.t_dh[3] = self.joint_angles[2]
-		self.t_dh[4] = self.joint_angles[4] + np.pi/2
-		
+
 		# Extract transformation matrix
 		WTG = self.dhs2T(self.r_dh,self.d_dh,self.t_dh,self.a_dh)
+
+		theta_x = np.arctan2(WTG[2][1],WTG[2][2])
+		theta_y = np.arctan2(-WTG[2][0],np.sqrt(WTG[2][1]**2 + WTG[2][2]**2))
+		theta_z= np.arctan2(WTG[1][0],WTG[0][0]) 
 		
 		# Assemble the end effector position vector
-		r = np.array([WTG[0][3],WTG[1][3],WTG[2][3]]).T
-	   
+		r = np.zeros((6,1), dtype=np.float64)
+		r[0] = WTG[0][3]
+		r[1] = WTG[1][3]
+		r[2] = WTG[2][3]
+		r[3] = theta_x
+		r[4] = theta_y
+		r[5] = theta_z
+
 		return r
 
 
@@ -167,56 +218,57 @@ class RoboticArm() :
 		OUTPUTS
 		Jac : jacobian matrix (float 3x5)                                           
 		"""
-		Jac = np.zeros((6,self.dof), dtype=np.float64)      
 
+		J = np.zeros((6,self.dof), dtype=np.float64)
 
-		# Slice arrays for necessary parameters
-		r = self.r_dh[:-1]
-		d = self.d_dh[:-1]
-		t = self.t_dh[:-1]
-		a = self.a_dh[:-1]
-		e_T_f = self.dh2T(self.r_dh[-1], self.d_dh[-1], self.t_dh[-1], self.a_dh[-1])
+		c = lambda ang : np.cos(ang)
+		s = lambda ang : np.sin(ang)
 
-		for i in range(self.dof-1, -1, -1):
+		l1 = self.l1
+		l2 = self.l2
+		l3 = self.l3
+		l4 = self.l4
 
-			# Slice arrays for necessary parameters
-			r_loop = r[i:]
-			d_loop = d[i:]
-			t_loop = t[i:]
-			a_loop = a[i:]
+		q = self.joint_angles
+
+		J[0][0] = (l2 * s(q[1]) + l3 * s(q[1] + q[2]) + l4 * s(q[1] + q[2] + q[3])) * s(q[0])
+		J[0][1] = -1 * (l2 * c(q[1]) + l3 * c(q[1] + q[2]) + l4 * c(q[1] + q[2] + q[3])) * c(q[0])
+		J[0][2] = -1 * (l3 * c(q[1] + q[2]) + l4 * c(q[1] + q[2] + q[3])) * c(q[0])
+		J[0][3] = -1 * l4 * c(q[1] + q[2] + q[3]) * c(q[0])
+		J[0][4] = 0.
+
+		J[1][0] = (l2 * s(q[1]) + l3 * s(q[1] + q[2]) + l4 * s(q[1] + q[2] + q[3])) * c(q[0])
+		J[1][1] = (l2 * c(q[1]) + l3 * c(q[1] + q[2]) + l4 * c(q[1] + q[2] + q[3])) * s(q[0])
+		J[1][2] = (l3 * c(q[1] + q[2]) + l4 * c(q[1] + q[2] + q[3])) * s(q[0])
+		J[1][3] = l4 * c(q[1] + q[2] + q[3]) * s(q[0])
+		J[1][4] = 0.
+
+		J[2][0] = 0.
+		J[2][1] = -l2 * s(q[1]) - l3 * s(q[1] + q[2]) - l4 * s(q[1] + q[2] + q[3])
+		J[2][2] = -l3 * s(q[1] + q[2]) - l4 * s(q[1] + q[2] + q[3])
+		J[2][3] = -l4 * s(q[1] + q[2] + q[3])
+		J[2][4] = 0.
+
+		J[3][0] = 0.
+		J[3][1] = 0.
+		J[3][2] = 0.
+		J[3][3] = 0.
+		J[3][4] = 1.
+
+		J[4][0] = 0.
+		J[4][1] = 1.
+		J[4][2] = 1.
+		J[4][3] = 1.
+		J[4][4] = 0.
+
+		J[5][0] = 1.
+		J[5][1] = 0.
+		J[5][2] = 0.
+		J[5][3] = 0.
+		J[5][4] = 0.
+
+		return J 
 			
-			# Step 1
-			Ji = np.zeros(6, dtype=np.float64).T
-
-			# Step 2
-			n_T_e = self.dhs2T(r_loop, d_loop, t_loop, a_loop)
-			T = np.matmul(n_T_e,e_T_f)
-
-			# Step 3	
-			pi = np.zeros(3, dtype=np.float64)
-			pi = T[0:3,3]		
-			vec = np.zeros(3, dtype=np.float64)
-			vec[2] = 1
-			Ji[0:3] = np.cross(vec.T,pi.T, axis = 0)
-			Ji[3:] = vec
-
-			# Step 4
-			Jac[:,i] = Ji
-
-			# Step 5
-			rmat = np.zeros((6,6), dtype=np.float64)
-			Tr = self.dh2T(self.r_dh[i], self.d_dh[i], self.t_dh[i], self.a_dh[i])
-			rmat[0:3,0:3] = Tr[0:3,0:3] 
-			rmat[3:,3:] = Tr[0:3,0:3] 
-
-			# Step 6
-			Jac = rmat.dot(Jac)
-
-			print(Jac)
-
-		self.J = Jac
-
-		
 	def move_to_home(self):
 		"""
 		Moves robot arm to rest position
@@ -269,46 +321,13 @@ class RoboticArm() :
 		Returns speed command to send to actuator
 		
 		OUTPUTS
-		q_dot  : speed command for motors     (list 5x1)
-
-
+		cmd_to_motors  : position command for motors     (list 5x1)
 		"""
 		q_dot = np.zeros((5,1), dtype = np.float64)
-		J_inv = np.linalg.pinv(self.J) 
+		J = self.jacobian_matrix()
+		J_inv = np.linalg.pinv(J) 
 		q_dot = np.dot(J_inv,self.ref_cmd)
 
-		#q = self.calculate_command(q_dot)
-		if np.count_nonzero(q_dot) <= 0.01:
-			q = self.old_cmd
-		else:
-			q = self.joint_angles + q_dot*0.5
-			if (np.count_nonzero(q_dot) > 0.01) and (np.count_nonzero(q_dot) < 5.0):
-				indices = np.where(q_dot == 0.0)[0]
-				for i in indices:
-					q[i] = self.old_cmd[i]
-        	self.old_cmd = q 
-            
-
-		cmd_to_motor = (q).flatten().tolist()
-		return cmd_to_motor
-
-	def calculate_command(self, q_dot):
-
-		if (np.count_nonzero(q_dot) - 5 <= 0.01):
-			q = self.joint_angles + q_dot*0.5
-        	self.old_cmd = q 
-
-		if (np.count_nonzero(q_dot) <= 0.01):
-			q = self.old_cmd
-
-		else:
-			indices = np.where(q_dot == 0.0)[0]
-			q = self.joint_angles + q_dot*0.5
-			for i in indices:
-				q[i] = self.old_cmd[i]
-			self.old_cmd = q 
-
-		
-		return q
+		return q_dot.flatten().tolist()
 
 		

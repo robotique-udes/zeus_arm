@@ -13,8 +13,7 @@
   </node>
 
   <!-- Launch joint control -->
-  <node pkg="zeus_arm" type="joint_teleop_sim.py" name="joint_teleop_arm" output="screen">
-  </node>
+  <node pkg="zeus_arm" type="joint_teleop_sim.py" name="joint_teleop_arm" output="screen"/>
 
 
   <!-- Launch Gazebo with an empty world -->
@@ -54,4 +53,9 @@
    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false" output="screen">
 	<remap from="/joint_states" to ="/zeus_arm/joint_states" />
    </node>
+
+   <!-- Initialize the robot and unpause gazebo -->
+   <arg name="start_delay_seconds" default="5"/>
+   <node name="init_robot" pkg="zeus_arm" type="init_robot.py" output="screen" respawn="false" launch-prefix="bash -c 'sleep $(arg start_delay_seconds); $0 $@'"/>
+
 </launch>

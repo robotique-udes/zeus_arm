@@ -4,6 +4,7 @@
 
 # Created on January 27 2021
 # @author: Simon Chamorro       simon.chamorro@usherbrooke.ca
+#          Santiago Moya        santiago.moya@usherbrooke.ca
 
 
 """
@@ -35,7 +36,6 @@ class PosTeleopNode():
         self.axes = ['x', 'y', 'z', 'qx', 'qy', 'qz']
 
         # Init commands in rad
-        self.curr_pos = [0.0, 0.0, 1.57, 1.57, 0.0]
         self.cmd = Twist()
         #self.print_state()
         self.last_change = time.time()
@@ -49,49 +49,6 @@ class PosTeleopNode():
         # Subscribe to joystick
         self.joy_sub = rospy.Subscriber('/joy', Joy, self.joy_callback)
 
-        # Subscribe to arm state
-        self.arm_sub = rospy.Subscriber('/zeus_arm/joint_states', JointState, self.state_callback)
-
-
-    def print_state(self):
-        '''
-        Prints state for user.
-        '''
-        print("Controlling axis: " + self.axes[self.curr_axis])
-
-
-    def change_axis(self, direction):
-        '''
-        Change current axis
-        ----------
-        Parameters
-        ----------
-        direction: int
-            +1 or -1
-        '''
-        if time.time() - self.last_change > 0.3:
-            if direction >= 1:
-                new_axis = (self.curr_axis + 1) % self.num_axis 
-                self.curr_axis = new_axis
-                self.last_change = time.time()
-            else:
-                new_axis = (self.curr_axis - 1) % self.num_axis 
-                self.curr_axis = new_axis
-                self.last_change = time.time()
-            self.print_state()
-
-
-    def state_callback(self, msg):
-        '''
-        Callback from arm
-        ----------
-        Parameters
-        ----------
-        msg: JointState
-            Message from arm (sim or real)
-        '''
-        self.curr_pos = list(msg.position)
-
 
     def joy_callback(self, msg):
         '''
@@ -102,41 +59,23 @@ class PosTeleopNode():
         msg: Joy
             Message from joystick
         '''
-        # Change joint if necessary
-        #if msg.buttons[0]:
-        #    self.change_axis(-1)
-        #elif msg.buttons[3]:
-        #    self.change_axis(1)
-
 
         # Save command
-        cmd_x = msg.axes[1]
-        cmd_y = msg.axes[0]
-        cmd_z = msg.axes[4]
-        cmd_qx = msg.axes[7]
-        cmd_qy = msg.axes[6]
-        cmd_qz = msg.buttons[1]
         self.cmd = Twist()
-        self.cmd.linear.x = cmd_x
-        self.cmd.linear.y = cmd_y
-        self.cmd.linear.z = cmd_z
-        self.cmd.angular.x = cmd_qx
-        self.cmd.angular.y = cmd_qy
-        self.cmd.angular.z = cmd_qz
-        
-        #if self.curr_axis == 0:
-         #   self.cmd.linear.x = cmd
-        #elif self.curr_axis == 1:
-         #   self.cmd.linear.y = cmd
-        #elif self.curr_axis == 2:
-         #   self.cmd.linear.z = cmd
-        #elif self.curr_axis == 3:
-         #   self.cmd.angular.x = cmd
-        #elif self.curr_axis == 4:
-         #   self.cmd.angular.y = cmd
-        #elif self.curr_axis == 5:
-         #   self.cmd.angular.z = cmd
 
+        # Left joystick up-down
+        self.cmd.linear.x = msg.axes[1]
+        # Left joystick left-right
+        self.cmd.linear.y = msg.axes[0]
+        # Right joystick up-down
+        self.cmd.linear.z = msg.axes[4]
+        # Num pad up-down
+        self.cmd.angular.x = msg.axes[7]
+        # Num pad left-right
+        self.cmd.angular.y = msg.axes[6]
+        # B button
+        self.cmd.angular.z = msg.buttons[1]
+        
 
     def send_cmd_callback(self, evt):
         '''

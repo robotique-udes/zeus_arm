@@ -4,23 +4,30 @@ zeus_arm:
     publish_rate: 50
 
   joint_1_position_controller:
-    type: effort_controllers/JointPositionController
+    type: velocity_controllers/JointVelocityController
     joint: joint_1
-    pid: {p: 27.0, i: 6.0, d: 17.0}
+  #  pid: {p: 27.0, i: 6.0, d: 17.0}
   joint_2_position_controller:
-    type: effort_controllers/JointPositionController
+    type: velocity_controllers/JointVelocityController
     joint: joint_2
-    pid: {p: 700.0, i: 300.0, d: 100.0}
+  #  pid: {p: 700.0, i: 300.0, d: 100.0}
   joint_3_position_controller:
-    type: effort_controllers/JointPositionController
+    type: velocity_controllers/JointVelocityController
     joint: joint_3
-    pid: {p: 750.0, i: 90.0, d: 150.0}
+  #  pid: {p: 750.0, i: 90.0, d: 150.0}
   joint_4_position_controller:
-    type: effort_controllers/JointPositionController
+    type: velocity_controllers/JointVelocityController
     joint: joint_4
-    pid: {p: 150.0, i: 15.0, d: 20.0}
+  #  pid: {p: 150.0, i: 15.0, d: 20.0}
   joint_5_position_controller:
-    type: effort_controllers/JointPositionController
+    type: velocity_controllers/JointVelocityController
     joint: joint_5
-    pid: {p: 10.0, i: 5.0, d: 0.0}
+  #  pid: {p: 10.0, i: 5.0, d: 0.0}
+
+  gazebo_ros_control/pid_gains:
+    joint_1 : {p: 100.0, i: 10.0, d: 0.0}
+    joint_2 : {p: 150.0, i: 50.0, d: 0.0}
+    joint_3 : {p: 100.0, i: 0.0, d: 0.0}
+    joint_4 : {p: 20.0, i: 0.0, d: 0.0}
+    joint_5 : {p: 0.1, i: 0.0, d: 0.0}
 

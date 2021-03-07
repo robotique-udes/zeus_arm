@@ -21,7 +21,7 @@
                       -J joint_1 0
                       -J joint_2 0
                       -J joint_3 1.57
-                      -J joint_4 0
+                      -J joint_4 1.57
                       -J joint_5 0" />
 
 	<!-- Load controller configuration file -->
@@ -46,8 +46,8 @@
   
         <node pkg="joy" type="joy_node" name="joy_node">
           <param name="dev" value="$(arg joy_dev)" />
-          <param name="deadzone" value="0.3" />
-          <param name="autorepeat_rate" value="20" />
+          <param name="deadzone" value="0.05" />
+          <param name="autorepeat_rate" value="50" />
           <remap from="joy" to="$(arg joy_topic)" />
         </node>
 
@@ -55,10 +55,11 @@
 	<node name="teleop_node" pkg="zeus_arm" type="pos_teleop.py" output="screen" />
 
 	<!-- Launch arm node -->
-	<node name="arm_node" pkg="zeus_arm" type="arm_node.py" output="screen" /> 
+	<node name="arm_node" pkg="zeus_arm" type="arm_node.py" output="screen" />
 
-        <!-- Home the robot and unpause gazebo -->
+        <!-- Initialize the robot and unpause gazebo -->
 	<arg name="start_delay_seconds" default="5"/>
-	<node name="init_robot" pkg="zeus_arm" type="home_robot.py" output="screen" respawn="false" launch-prefix="bash -c 'sleep $(arg start_delay_seconds); $0 $@'"/>
+	<node name="init_robot" pkg="zeus_arm" type="init_robot.py" output="screen" respawn="false" launch-prefix="bash -c 'sleep $(arg start_delay_seconds); $0 $@'"/>
+
 
 </launch>

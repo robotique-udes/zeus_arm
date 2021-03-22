@@ -1,5 +1,6 @@
 <?xml version='1.0'?>
 <launch>
+  <!-- Common launch file for simulation and real robot -->
 
   <!-- Launch joystick ROS drivers -->
   <arg name="joy_dev" default="/dev/input/js0" />
@@ -11,11 +12,5 @@
     <param name="autorepeat_rate" value="20" />
     <remap from="joy" to="$(arg joy_topic)" />
   </node>
-SS
-  <!-- Launch joint control -->
-  <node pkg="zeus_arm" type="joint_teleop.py" name="joint_teleop_arm" output="screen">
-  </node>
-
-
 
 </launch>

@@ -44,11 +44,10 @@ class JointTeleopNode():
         self.last_change = time.time()
 
         # Init publishers
-        self.j1_pub = rospy.Publisher('/zeus_arm/joint_1_position_controller/command', Float32, queue_size=10)
-        self.j2_pub = rospy.Publisher('/zeus_arm/joint_2_position_controller/command', Float32MultiArray, queue_size=10)
-        #self.j3_pub = rospy.Publisher('/zeus_arm/joint_3_position_controller/command', Float32, queue_size=10)
-        self.j4_pub = rospy.Publisher('/zeus_arm/joint_4_position_controller/command', Float32, queue_size=10)
-        self.j5_pub = rospy.Publisher('/zeus_arm/joint_5_position_controller/command', Float32, queue_size=10)
+        self.j1_pub = rospy.Publisher('/zeus_arm/joint_1_velocity_controller/command', Float32, queue_size=10)
+        self.j2_pub = rospy.Publisher('/zeus_arm/joint_2_velocity_controller/command', Float32MultiArray, queue_size=10)
+        self.j4_pub = rospy.Publisher('/zeus_arm/joint_4_velocity_controller/command', Float32, queue_size=10)
+        self.j5_pub = rospy.Publisher('/zeus_arm/joint_5_velocity_controller/command', Float32, queue_size=10)
 
         # Init command loop 
         rospy.Timer(rospy.Duration(1.0/50), self.send_cmd_callback)
@@ -59,7 +58,6 @@ class JointTeleopNode():
         # Subscribe to arm state
         self.j1_sub = rospy.Subscriber('/zeus_arm/joint_1_state', Float32, self.j1_state_callback)
         self.j2_sub = rospy.Subscriber('/zeus_arm/joint_2_state', Float32, self.j2_state_callback)
-        #self.j3_sub = rospy.Subscriber('/zeus_arm/joint_3_state', Float32, self.j3_state_callback)
         self.j4_sub = rospy.Subscriber('/zeus_arm/joint_4_state', Float32, self.j4_state_callback)
         self.j5_sub = rospy.Subscriber('/zeus_arm/joint_5_state', Float32, self.j5_state_callback)
 

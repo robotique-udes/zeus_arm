@@ -23,6 +23,7 @@ from geometry_msgs.msg import Twist
 from zeus_arm.msg import Floats
 from std_msgs.msg import Float64
 from sensor_msgs.msg import JointState
+from zeus_arm.msg import Command
 
 class ArmNode():
 
@@ -33,17 +34,20 @@ class ArmNode():
 
         rospy.loginfo("Initialized node")
         self.robot = RoboticArm()
+        self.cmd = np.zeros((6,1),dtype=np.float64)
+        self.ref_cmd = np.zeros((6,1),dtype=np.float64)
+        self.ctrl_mode = 2
 
         # Init subscripers
-        rospy.Subscriber("/zeus_arm/cmd_vel", Twist, self.set_joint_cmd)
+        rospy.Subscriber("/zeus_arm/cmd_vel", Command, self.set_cmd)
         rospy.Subscriber("/zeus_arm/joint_states", JointState ,self.update_joint_states)
 
         # Init publishers
-        self.j1_pub = rospy.Publisher('/zeus_arm/joint_1_position_controller/command', Float64, queue_size=10)
-        self.j2_pub = rospy.Publisher('/zeus_arm/joint_2_position_controller/command', Float64, queue_size=10)
-        self.j3_pub = rospy.Publisher('/zeus_arm/joint_3_position_controller/command', Float64, queue_size=10)
-        self.j4_pub = rospy.Publisher('/zeus_arm/joint_4_position_controller/command', Float64, queue_size=10)
-        self.j5_pub = rospy.Publisher('/zeus_arm/joint_5_position_controller/command', Float64, queue_size=10)
+        self.j1_pub = rospy.Publisher('/zeus_arm/joint_1_velocity_controller/command', Float64, queue_size=10)
+        self.j2_pub = rospy.Publisher('/zeus_arm/joint_2_velocity_controller/command', Float64, queue_size=10)
+        self.j3_pub = rospy.Publisher('/zeus_arm/joint_3_velocity_controller/command', Float64, queue_size=10)
+        self.j4_pub = rospy.Publisher('/zeus_arm/joint_4_velocity_controller/command', Float64, queue_size=10)
+        self.j5_pub = rospy.Publisher('/zeus_arm/joint_5_velocity_controller/command', Float64, queue_size=10)
         
         # Control loop @40Hz
         rospy.Timer(rospy.Duration(1.0/50),self.speed_controller)
@@ -54,8 +58,11 @@ class ArmNode():
         Velocity control loop
         """
         # TODO : Move Arduino position publishing inside de command callback  
-        cmd = self.robot.speed_controller()
-        self.send_cmd(cmd)
+        if self.ctrl_mode == 2:
+            self.robot.ref_cmd = self.ref_cmd
+            self.cmd = self.robot.speed_controller()
+
+        self.send_cmd(self.cmd)
 
 
     def send_cmd(self, cmd):
@@ -68,26 +75,34 @@ class ArmNode():
         self.j4_pub.publish(cmd[3])
         self.j5_pub.publish(cmd[4])
 
-    def set_joint_cmd(self,msg):
+    def set_cmd(self,msg):
         '''
         Callback from joystick
         ----------
         Parameters
         ----------
-        msg: Twist
-             Cartesian command for end effector
+        msg: Command
+             Command structure containing control mode and command
         '''
 
-        # Create command structure
-        cmd = np.zeros((6,1),dtype=np.float64)
-        cmd[0] = msg.linear.x
-        cmd[1] = msg.linear.y
-        cmd[2] = msg.linear.z
-        cmd[3] = msg.angular.x
-        cmd[4] = msg.angular.y
-        cmd[5] = msg.angular.z 
+        if msg.mode == 1:
+            self.ctrl_mode = 1
+            self.cmd[0] = msg.cmd.linear.x
+            self.cmd[1] = msg.cmd.linear.y
+            self.cmd[2] = msg.cmd.linear.z
+            self.cmd[3] = msg.cmd.angular.x
+            self.cmd[4] = msg.cmd.angular.y
 
-        self.robot.ref_cmd = cmd
+        else:
+            self.ctrl_mode = 2
+            self.ref_cmd[0] = msg.cmd.linear.x
+            self.ref_cmd[1] = msg.cmd.linear.y
+            self.ref_cmd[2] = msg.cmd.linear.z
+            self.ref_cmd[3] = msg.cmd.angular.x
+            self.ref_cmd[4] = msg.cmd.angular.y
+            self.ref_cmd[5] = msg.cmd.angular.z 
+
+
 
     def update_joint_states(self, msg):
         '''

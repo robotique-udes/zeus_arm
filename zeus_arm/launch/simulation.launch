@@ -1,5 +1,7 @@
 <?xml version='1.0'?>
 <launch>
+	<!-- Launch robot bringup -->
+	<include file="$(find zeus_arm)/launch/bringup.launch" />
 
 	<!-- Launch Gazebo with an empty world -->
 	<include file="$(find gazebo_ros)/launch/empty_world.launch">
@@ -10,46 +12,36 @@
 	</include>
 
 	<!-- Load the description for the robot -->
-	<param name="robot_description" command="cat '$(find zeus_arm)/urdf/zeus_arm_mat.urdf'" />
+	<param name="robot_description" command="cat '$(find zeus_arm)/urdf/robot.urdf'" />
 
 	<!-- Spawn the robot in Gazebo -->
 	<node name="spawn_robot_urdf" pkg="gazebo_ros" type="spawn_model" output="screen"
 		args="-urdf -param robot_description -model zeus_arm -robot_namespace /zeus_arm 
-		      -x 0 
+		              -x 0 
                       -y 0 
                       -z 0
                       -J joint_1 0
                       -J joint_2 0
-                      -J joint_3 1.57
-                      -J joint_4 1.57
+                      -J joint_3 0
+                      -J joint_4 0
                       -J joint_5 0" />
 
 	<!-- Load controller configuration file -->
-	<rosparam file="$(find zeus_arm)/config/joint_position_controllers.yaml" command="load"/>
+	<rosparam file="$(find zeus_arm)/config/joint_velocity_controllers.yaml" command="load"/>
 
+	<!-- Load controller spawner from ROS control -->
 	<node  name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" 
-	 ns="/zeus_arm" args="joint_1_position_controller 
-			     joint_2_position_controller 
-                             joint_3_position_controller 
-                             joint_4_position_controller 
-                             joint_5_position_controller 
-                             joint_state_controller"/>
+	 ns="/zeus_arm" args="joint_1_velocity_controller 
+			     		  joint_2_velocity_controller 
+                          joint_3_velocity_controller 
+                          joint_4_velocity_controller 
+                          joint_5_velocity_controller 
+                          joint_state_controller"/>
 
+    <!-- Launch joint state publisher from ROS control -->
 	<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false" output="screen">
 		<remap from="/joint_states" to ="/zeus_arm/joint_states" />
 	</node>
-
-
-        <!-- Launch joystick ROS drivers -->
-        <arg name="joy_dev" default="/dev/input/js0" />
-        <arg name="joy_topic" default="joy" />
-  
-        <node pkg="joy" type="joy_node" name="joy_node">
-          <param name="dev" value="$(arg joy_dev)" />
-          <param name="deadzone" value="0.05" />
-          <param name="autorepeat_rate" value="50" />
-          <remap from="joy" to="$(arg joy_topic)" />
-        </node>
 
 	<!-- Launch teleop script -->
 	<node name="teleop_node" pkg="zeus_arm" type="pos_teleop.py" output="screen" />
@@ -57,7 +49,7 @@
 	<!-- Launch arm node -->
 	<node name="arm_node" pkg="zeus_arm" type="arm_node.py" output="screen" />
 
-        <!-- Initialize the robot and unpause gazebo -->
+    <!-- Initialize the robot and unpause gazebo -->
 	<arg name="start_delay_seconds" default="5"/>
 	<node name="init_robot" pkg="zeus_arm" type="init_robot.py" output="screen" respawn="false" launch-prefix="bash -c 'sleep $(arg start_delay_seconds); $0 $@'"/>
 

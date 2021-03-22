@@ -33,10 +33,11 @@ class RoboticArm() :
 		"""
 		# Robot geometry
 		self.dof = 5
-		self.l1 = 0.21653
-		self.l2 = 0.95034
-		self.l3 = 1.53694
-		self.l4 = 0.25664
+		self.l1 = 0.156175
+		self.l2 = 0.265614
+		self.l3 = 0.539307
+		self.l4 = 0.457614
+		self.l5 = 0.131542
 
 		# DH parameters are in order from world to end-effector        
 		self.r_dh = np.array([0.,      0.,       0.73375, 0.5866,  0.,      0.]) 
@@ -47,7 +48,6 @@ class RoboticArm() :
 		# Robot state
 		self.ref_cmd = np.zeros((6,1), dtype=np.float64)
 		self.old_cmd = np.array([[0.0], [0.0], [1.57], [1.57], [0.0]],dtype=np.float64)
-
 
 		# Skip control loop or not
 		self.skip_loop = False
@@ -228,25 +228,26 @@ class RoboticArm() :
 		l2 = self.l2
 		l3 = self.l3
 		l4 = self.l4
+		l5 = self.l5
 
 		q = self.joint_angles
 
-		J[0][0] = (l2 * s(q[1]) + l3 * s(q[1] + q[2]) + l4 * s(q[1] + q[2] + q[3])) * s(q[0])
-		J[0][1] = -1 * (l2 * c(q[1]) + l3 * c(q[1] + q[2]) + l4 * c(q[1] + q[2] + q[3])) * c(q[0])
-		J[0][2] = -1 * (l3 * c(q[1] + q[2]) + l4 * c(q[1] + q[2] + q[3])) * c(q[0])
-		J[0][3] = -1 * l4 * c(q[1] + q[2] + q[3]) * c(q[0])
+		J[0][0] = -(l2 + l3 * c(q[1]) + l4 *c(q[1] + q[2] + np.pi) + l5 * c(q[1] + q[2] + q[3] + np.pi)) * s(q[0])
+		J[0][1] = (l3 * c(q[1]) - l4 * s(q[1] + q[2] + np.pi) - l5 * s(q[1] + q[2] + q[3] + np.pi)) * c(q[0])
+		J[0][2] = (-l4 * s(q[1] + q[2] + np.pi) - l5 * s(q[1] + q[2] + q[3] + np.pi)) * c(q[0])
+		J[0][3] = (-l5 * s(q[1] + q[2] + q[3] + np.pi)) * c(q[0])
 		J[0][4] = 0.
 
-		J[1][0] = (l2 * s(q[1]) + l3 * s(q[1] + q[2]) + l4 * s(q[1] + q[2] + q[3])) * c(q[0])
-		J[1][1] = (l2 * c(q[1]) + l3 * c(q[1] + q[2]) + l4 * c(q[1] + q[2] + q[3])) * s(q[0])
-		J[1][2] = (l3 * c(q[1] + q[2]) + l4 * c(q[1] + q[2] + q[3])) * s(q[0])
-		J[1][3] = l4 * c(q[1] + q[2] + q[3]) * s(q[0])
+		J[1][0] = -(l2 + l3 * c(q[1]) + l4 *c(q[1] + q[2] + np.pi) + l5 * c(q[1] + q[2] + q[3] + np.pi)) * c(q[0])
+		J[1][1] = -(l3 * c(q[1]) - l4 * s(q[1] + q[2] + np.pi) - l5 * s(q[1] + q[2] + q[3] + np.pi)) * s(q[0])
+		J[1][2] = -(-l4 * s(q[1] + q[2] + np.pi) - l5 * s(q[1] + q[2] + q[3] + np.pi)) * s(q[0])
+		J[1][3] = -(-l5 * s(q[1] + q[2] + q[3] + np.pi)) * s(q[0])
 		J[1][4] = 0.
 
 		J[2][0] = 0.
-		J[2][1] = -l2 * s(q[1]) - l3 * s(q[1] + q[2]) - l4 * s(q[1] + q[2] + q[3])
-		J[2][2] = -l3 * s(q[1] + q[2]) - l4 * s(q[1] + q[2] + q[3])
-		J[2][3] = -l4 * s(q[1] + q[2] + q[3])
+		J[2][1] = -l3 * s(q[1]) + l4 * c(q[1] + q[2] + np.pi) + l5 * c(q[1] + q[2] + q[3] + np.pi)
+		J[2][2] = l4 * c(q[1] + q[2] + np.pi) + l5 * c(q[1] + q[2] + q[3] + np.pi)
+		J[2][3] = l5 * c(q[1] + q[2] + q[3] + np.pi)
 		J[2][4] = 0.
 
 		J[3][0] = 0.

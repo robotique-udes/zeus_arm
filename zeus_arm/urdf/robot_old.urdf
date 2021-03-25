@@ -1,0 +1,279 @@
+<robot name="zeus_arm">
+
+<link name="world"/>
+<joint name="fixed" type="fixed">
+<parent link="world"/>
+<child link="base_link"/>
+</joint>
+
+<link name="base_link">
+<visual>
+<origin xyz="0 0 0" rpy="0 -0 0" />
+<geometry>
+<mesh filename="package://zeus_arm/meshes/base_link_visual.stl"/>
+</geometry>
+<material name="base_link_material">
+<color rgba="0.615686 0.811765 0.929412 1.0"/>
+</material>
+</visual>
+<collision>
+<origin xyz="0 0 0" rpy="0 -0 0" />
+<geometry>
+<mesh filename="package://zeus_arm/meshes/base_link_collision.stl"/>
+</geometry>
+<material name="base_link_material">
+<color rgba="0.5 0.5 0.5 1.0"/>
+</material>
+</collision>
+<inertial>
+<origin xyz="-8.97273e-17 -1.32956e-16 0.0246358" rpy="0 0 0"/>
+<mass value="0.105987" />
+<inertia ixx="9.23767e-05" ixy="-2.21154e-21"  ixz="6.93695e-37" iyy="9.23767e-05" iyz="-4.02797e-37" izz="1.80251e-05" />
+</inertial>
+</link>
+
+<link name="base_box">
+<visual>
+<origin xyz="0 0 0" rpy="0 -0 0" />
+<geometry>
+<mesh filename="package://zeus_arm/meshes/base_box_visual.stl"/>
+</geometry>
+<material name="base_box_material">
+<color rgba="0.626816 0.73226 0.808269 1.0"/>
+</material>
+</visual>
+<collision>
+<origin xyz="0 0 0" rpy="0 -0 0" />
+<geometry>
+<mesh filename="package://zeus_arm/meshes/base_box_collision.stl"/>
+</geometry>
+<material name="base_box_material">
+<color rgba="0.5 0.5 0.5 1.0"/>
+</material>
+</collision>
+<inertial>
+<origin xyz="-0.0213424 0.00743058 -0.0440293" rpy="0 0 0"/>
+<mass value="2.7403" />
+<inertia ixx="0.0167295" ixy="0.000175543"  ixz="-0.00303107" iyy="0.0467506" iyz="0.000283899" izz="0.051346" />
+</inertial>
+</link>
+
+<link name="forearm">
+<visual>
+<origin xyz="0 0 0" rpy="0 -0 0" />
+<geometry>
+<mesh filename="package://zeus_arm/meshes/forearm_visual.stl"/>
+</geometry>
+<material name="forearm_material">
+<color rgba="0.495491 0.509499 0.528334 1.0"/>
+</material>
+</visual>
+<collision>
+<origin xyz="0 0 0" rpy="0 -0 0" />
+<geometry>
+<mesh filename="package://zeus_arm/meshes/forearm_collision.stl"/>
+</geometry>
+<material name="forearm_material">
+<color rgba="0.5 0.5 0.5 1.0"/>
+</material>
+</collision>
+<inertial>
+<origin xyz="0.178438 0.0016449 -0.0908978" rpy="0 0 0"/>
+<mass value="0.919239" />
+<inertia ixx="0.00625649" ixy="0.000363195"  ixz="-0.000136989" iyy="0.0440255" iyz="5.5218e-05" izz="0.0382142" />
+</inertial>
+</link>
+
+<link name="arm">
+<visual>
+<origin xyz="0 0 0" rpy="0 -0 0" />
+<geometry>
+<mesh filename="package://zeus_arm/meshes/arm_visual.stl"/>
+</geometry>
+<material name="arm_material">
+<color rgba="0.412162 0.501425 0.677787 1.0"/>
+</material>
+</visual>
+<collision>
+<origin xyz="0 0 0" rpy="0 -0 0" />
+<geometry>
+<mesh filename="package://zeus_arm/meshes/arm_collision.stl"/>
+</geometry>
+<material name="arm_material">
+<color rgba="0.5 0.5 0.5 1.0"/>
+</material>
+</collision>
+<inertial>
+<origin xyz="0.0731351 0.194801 -0.0216644" rpy="0 0 0"/>
+<mass value="1.73505" />
+<inertia ixx="0.026942" ixy="0.000938202"  ixz="2.49123e-05" iyy="0.00136606" iyz="-0.000185592" izz="0.0279271" />
+</inertial>
+</link>
+
+<link name="z1-arm-04-v2.1">
+<visual>
+<origin xyz="0 0 0" rpy="0 -0 0" />
+<geometry>
+<mesh filename="package://zeus_arm/meshes/z1-arm-04-v2.1_visual.stl"/>
+</geometry>
+<material name="z1-arm-04-v2.1_material">
+<color rgba="0.665758 0.683207 0.671761 1.0"/>
+</material>
+</visual>
+<collision>
+<origin xyz="0 0 0" rpy="0 -0 0" />
+<geometry>
+<mesh filename="package://zeus_arm/meshes/z1-arm-04-v2.1_collision.stl"/>
+</geometry>
+<material name="z1-arm-04-v2.1_material">
+<color rgba="0.5 0.5 0.5 1.0"/>
+</material>
+</collision>
+<inertial>
+<origin xyz="0.00357713 0.0529862 -0.00728184" rpy="0 0 0"/>
+<mass value="0.144799" />
+<inertia ixx="0.000147811" ixy="1.65305e-05"  ixz="-3.2273e-08" iyy="5.29147e-05" iyz="9.09057e-07" izz="0.000173602" />
+</inertial>
+</link>
+
+<link name="z1-arm-05-v2">
+<visual>
+<origin xyz="0 0 0" rpy="0 -0 0" />
+<geometry>
+<mesh filename="package://zeus_arm/meshes/z1-arm-05-v2_visual.stl"/>
+</geometry>
+<material name="z1-arm-05-v2_material">
+<color rgba="0.636582 0.751733 0.792581 1.0"/>
+</material>
+</visual>
+<collision>
+<origin xyz="0 0 0" rpy="0 -0 0" />
+<geometry>
+<mesh filename="package://zeus_arm/meshes/z1-arm-05-v2_collision.stl"/>
+</geometry>
+<material name="z1-arm-05-v2_material">
+<color rgba="0.5 0.5 0.5 1.0"/>
+</material>
+</collision>
+<inertial>
+<origin xyz="1.6901e-05 -2.80763e-05 -0.0210662" rpy="0 0 0"/>
+<mass value="0.111078" />
+<inertia ixx="4.49655e-05" ixy="-9.03534e-10"  ixz="2.63895e-08" iyy="4.48162e-05" iyz="9.66689e-08" izz="3.76857e-05" />
+</inertial>
+</link>
+
+<joint name="joint_5" type="continuous">
+<origin xyz="2.36244e-05 0.09705 -0.00771916" rpy="1.5708 -1.5708 0" />
+<parent link="z1-arm-04-v2.1" />
+<child link="z1-arm-05-v2" />
+<axis xyz="0 0 -1"/>
+<limit effort="20" velocity="2"/>
+</joint>
+
+<joint name="joint_4" type="revolute">
+<origin xyz="0.0299719 0.45135 -0.015243" rpy="-3.01276e-14 -2.36075e-14 6.55794e-14" />
+<parent link="arm" />
+<child link="z1-arm-04-v2.1" />
+<axis xyz="0 0 1"/>
+<limit effort="20" velocity="20" lower="-0.174533" upper="1.5708"/>
+    <dynamics
+      damping="1"
+      friction="0.1" />
+</joint>
+
+<joint name="joint_3" type="revolute">
+<origin xyz="0.509281 -4.70242e-05 -0.065207" rpy="1.99439e-15 9.34573e-16 -4.93602e-14" />
+<parent link="forearm" />
+<child link="arm" />
+<axis xyz="0 0 1"/>
+<limit effort="20" velocity="20" lower="-0.174533" upper="1.39626"/>
+    <dynamics
+      damping="5"
+      friction="1.0" />
+</joint>
+
+<joint name="joint_2" type="revolute">
+<origin xyz="-0.266 0.0881134 -0.113175" rpy="-1.5708 1.5708 0" />
+<parent link="base_box" />
+<child link="forearm" />
+<axis xyz="0 0 1"/>
+<limit effort="20" velocity="20" lower="-0.174533" upper="1.91986"/>
+    <dynamics
+      damping="5"
+      friction="1.0" />
+</joint>
+
+<joint name="joint_1" type="continuous">
+<origin xyz="-8.98368e-17 -1.33256e-16 0.043" rpy="-3.14159 -1.31683e-22 -0.0482937" />
+<parent link="base_link" />
+<child link="base_box" />
+<axis xyz="0 0 1"/>
+<limit effort="100" velocity="20"/>
+    <dynamics
+      damping="5"
+      friction="3" />
+</joint>
+
+ <gazebo>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+	<robotNameSpace>/zeus_arm</robotNameSpace>
+    </plugin>
+  </gazebo>
+
+  <transmission name="tran1">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_1">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="motor1">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="tran2">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_2">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="motor2">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="tran3">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_3">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="motor3">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="tran4">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_4">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="motor4">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="tran5">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_5">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="motor5">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+
+</robot>

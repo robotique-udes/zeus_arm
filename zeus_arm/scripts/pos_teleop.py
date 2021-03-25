@@ -35,6 +35,7 @@ class PosTeleopNode():
         self.ctrl_mode = 2
         self.curr_joint = 0
         self.num_joints = 5
+        self.cartesian_speed = 0.5
 
         # Init command
         self.cmd = Command()
@@ -170,12 +171,12 @@ class PosTeleopNode():
             self.cmd.mode = self.ctrl_mode
 
             # Fill command
-            self.cmd.cmd.linear.x = msg.axes[1]           
-            self.cmd.cmd.linear.y = msg.axes[0]       
-            self.cmd.cmd.linear.z = msg.axes[4]      
-            self.cmd.cmd.angular.x = msg.axes[7]         
-            self.cmd.cmd.angular.y = msg.axes[6]
-            self.cmd.cmd.angular.z = msg.buttons[4] or -msg.buttons[5]
+            self.cmd.cmd.linear.x = msg.axes[1] * self.cartesian_speed          
+            self.cmd.cmd.linear.y = msg.axes[0] * self.cartesian_speed       
+            self.cmd.cmd.linear.z = msg.axes[4] * self.cartesian_speed
+            self.cmd.cmd.angular.x = msg.axes[7]          
+            self.cmd.cmd.angular.y = msg.axes[6] 
+            self.cmd.cmd.angular.z = (msg.buttons[4] or -msg.buttons[5]) 
         
 
     def send_cmd_callback(self, evt):

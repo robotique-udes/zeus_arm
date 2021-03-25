@@ -47,14 +47,8 @@ class RoboticArm() :
 
 		# Robot state
 		self.ref_cmd = np.zeros((6,1), dtype=np.float64)
-		self.old_cmd = np.array([[0.0], [0.0], [1.57], [1.57], [0.0]],dtype=np.float64)
-
-		# Skip control loop or not
-		self.skip_loop = False
-
-		self.intJ = np.zeros((6,self.dof), dtype=np.float64)
 		self.joint_angles = np.zeros(5, dtype=np.float64)
-
+		self.lambda_gain = 0.1
 		# Initialize configurable params
 		# Create a DynamicDynamicReconfigure Server
 		#self.ddr = DDynamicReconfigure("zeus_arm")
@@ -324,10 +318,15 @@ class RoboticArm() :
 		OUTPUTS
 		cmd_to_motors  : position command for motors     (list 5x1)
 		"""
+		# J_inv = np.linalg.pinv(J) 
+		# q_dot = np.dot(J_inv,self.ref_cmd)
+   
 		q_dot = np.zeros((5,1), dtype = np.float64)
 		J = self.jacobian_matrix()
-		J_inv = np.linalg.pinv(J) 
-		q_dot = np.dot(J_inv,self.ref_cmd)
+		Jt = J.T
+		I = np.identity(5)
+		lambda2I = np.power(self.lambda_gain, 2) * I
+		q_dot = np.dot(np.dot(np.linalg.inv(np.dot(Jt,J) + lambda2I), Jt), self.ref_cmd)
 
 		return q_dot.flatten().tolist()
 

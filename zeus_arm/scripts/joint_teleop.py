@@ -53,7 +53,7 @@ class JointTeleopNode():
         rospy.Timer(rospy.Duration(1.0/50), self.send_cmd_callback)
 
         # Subscribe to joystick
-        self.joy_sub = rospy.Subscriber('/joy', Joy, self.joy_callback)
+        self.joy_sub = rospy.Subscriber('/joy_arm', Joy, self.joy_callback)
 
         # Subscribe to arm state
         self.j1_sub = rospy.Subscriber('/zeus_arm/joint_1_state', Float32, self.j1_state_callback)

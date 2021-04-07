@@ -48,14 +48,14 @@ class RoboticArm() :
 		# Robot state
 		self.ref_cmd = np.zeros((6,1), dtype=np.float64)
 		self.joint_angles = np.zeros(5, dtype=np.float64)
-		self.lambda_gain = 0.1
+		#self.lambda_gain = 0.1
 		# Initialize configurable params
 		# Create a DynamicDynamicReconfigure Server
-		#self.ddr = DDynamicReconfigure("zeus_arm")
+		self.ddr = DDynamicReconfigure("zeus_arm")
 
 		# Add variables to ddr(name, description, default value, min, max, edit_method)        
 		# Model Settings
-		#self.ddr.add_variable("velocity_gain", "int", 1, 1, 10)
+		self.ddr.add_variable("lambda_gain", "float", 0.1, 0., 10.)
 		#self.inputs = ['Joint', 'Cartesian']
 		#self.input_enum = self.ddr.enum([ self.ddr.const("Cartesian", "int", 0, "Cartesian"),
 		#								  self.ddr.const("Joint", "int", 1, "Joint")],
@@ -64,8 +64,8 @@ class RoboticArm() :
 
 
 		# Start Server
-		#self.ddr.start(self.dynamic_reconfigure_callback)
-		#rospy.sleep(1)
+		self.ddr.start(self.dynamic_reconfigure_callback)
+		rospy.sleep(1)
 
 
 	def dynamic_reconfigure_callback(self, config, level):

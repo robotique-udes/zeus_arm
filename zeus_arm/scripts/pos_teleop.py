@@ -19,7 +19,7 @@ ROS Node to teleoperate the arm in caretsian position
 import time
 import rospy
 from sensor_msgs.msg import Joy, JointState
-#from geometry_msgs.msg import Twist
+from ddynamic_reconfigure_python.ddynamic_reconfigure import DDynamicReconfigure
 from zeus_arm.msg import Command
 
 
@@ -35,7 +35,7 @@ class PosTeleopNode():
         self.ctrl_mode = 2
         self.curr_joint = 0
         self.num_joints = 5
-        self.cartesian_speed = 0.5
+        #self.cartesian_speed = 0.5
 
         # Init command
         self.cmd = Command()
@@ -48,7 +48,48 @@ class PosTeleopNode():
         rospy.Timer(rospy.Duration(1.0/50), self.send_cmd_callback)
 
         # Subscribe to joystick
-        self.joy_sub = rospy.Subscriber('/joy', Joy, self.joy_callback)
+        self.joy_sub = rospy.Subscriber('/joy_arm', Joy, self.joy_callback)
+
+        # Initialize configurable params
+        # Create a DynamicDynamicReconfigure Server
+        self.ddr = DDynamicReconfigure("zeus_arm")
+
+        # # Add variables to ddr(name, description, default value, min, max, edit_method)        
+        # # Model Settings
+        self.ddr.add_variable("cartesian_speed", "float", 0.5, 0, 10)
+        # self.inputs = ['Joint', 'Cartesian']
+        # self.input_enum = self.ddr.enum([ self.ddr.const("Cartesian", "int", 2, "Cartesian"),
+        #                                  self.ddr.const("Joint", "int", 1, "Joint")],
+        #                                 "Input enum for arm control mode")
+        # self.ddr.add_variable("ctrl_mode", "desired control mode", 0, 0, 3, edit_method=self.input_enum)
+
+
+        # # Start Server
+        self.ddr.start(self.dynamic_reconfigure_callback)
+        rospy.sleep(1)
+
+
+    def dynamic_reconfigure_callback(self, config, level):
+
+        '''
+        Updates parameters value when changed by the user.
+        ----------
+        Parameters
+        ----------
+        config: dict
+            Keys are param names and values are param values
+        level: Unused
+        -------
+        Returns
+        -------
+        config: dict
+            Keys are param names and values are param values
+        '''
+        # Update variables
+        var_names = self.ddr.get_variable_names()
+        for var_name in var_names:
+            self.__dict__[var_name] = config[var_name]
+        return config
 
     def change_joint(self, direction):
         '''
@@ -92,17 +133,17 @@ class PosTeleopNode():
         '''
         Prints current controlled joint
         '''
-        print("Controlling joint : " + str(self.curr_joint + 1))
-
+        rospy.loginfo("Controlling joint : %s", str(self.curr_joint+1))
+        
     def print_mode(self):
         '''
         Prints current controlled joint
         '''
         if self.ctrl_mode ==1 : 
-            print("Joint control activated")
+            rospy.loginfo("Joint control activated")
             self.print_joint()
         else:
-            print("Cartesian control activated")
+            rospy.loginfo("Cartesian control activated")
 
 
     def joy_callback(self, msg):

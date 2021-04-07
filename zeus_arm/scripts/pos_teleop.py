@@ -4,6 +4,7 @@
 
 # Created on January 27 2021
 # @author: Simon Chamorro       simon.chamorro@usherbrooke.ca
+#          Santiago Moya        santiago.moya@usherbrooke.ca
 
 
 """
@@ -17,9 +18,9 @@ ROS Node to teleoperate the arm in caretsian position
 
 import time
 import rospy
-from std_msgs.msg import Float64
 from sensor_msgs.msg import Joy, JointState
-from geometry_msgs.msg import Twist
+from ddynamic_reconfigure_python.ddynamic_reconfigure import DDynamicReconfigure
+from zeus_arm.msg import Command
 
 
 class PosTeleopNode():
@@ -30,40 +31,69 @@ class PosTeleopNode():
         rospy.init_node('pos_teleop_arm', anonymous=False)
         rospy.on_shutdown(self.on_shutdown)
 
-        # Set 1st axis
-        self.curr_axis = 0
-        self.num_axis = 6 
-        self.axes = ['x', 'y', 'z', 'qx', 'qy', 'qz']
+        # Control mode, 1 = joint control, 2 = cartesian control
+        self.ctrl_mode = 2
+        self.curr_joint = 0
+        self.num_joints = 5
+        #self.cartesian_speed = 0.5
 
-        # Init commands in rad
-        self.curr_pos = [0.0, 0.0, 0.0, 0.0, 0.0]
-        self.cmd = [0.0, 0.0, 0.0, 0.0, 0.0]
-        self.print_state()
+        # Init command
+        self.cmd = Command()
         self.last_change = time.time()
 
         # Init publishers
-        self.twist_pub = rospy.Publisher('/zeus_arm/cmd_vel', Twist, queue_size=10)
+        self.cmd_pub = rospy.Publisher('/zeus_arm/cmd_vel', Command, queue_size=10)
 
         # Init command loop 
-        rospy.Timer(rospy.Duration(1.0/10), self.send_cmd_callback)
+        rospy.Timer(rospy.Duration(1.0/50), self.send_cmd_callback)
 
         # Subscribe to joystick
-        self.joy_sub = rospy.Subscriber('/joy', Joy, self.joy_callback)
+        self.joy_sub = rospy.Subscriber('/joy_arm', Joy, self.joy_callback)
 
-        # Subscribe to arm state
-        self.arm_sub = rospy.Subscriber('/zeus_arm/joint_states', JointState, self.state_callback)
+        # Initialize configurable params
+        # Create a DynamicDynamicReconfigure Server
+        self.ddr = DDynamicReconfigure("zeus_arm")
+
+        # # Add variables to ddr(name, description, default value, min, max, edit_method)        
+        # # Model Settings
+        self.ddr.add_variable("cartesian_speed", "float", 0.5, 0, 10)
+        # self.inputs = ['Joint', 'Cartesian']
+        # self.input_enum = self.ddr.enum([ self.ddr.const("Cartesian", "int", 2, "Cartesian"),
+        #                                  self.ddr.const("Joint", "int", 1, "Joint")],
+        #                                 "Input enum for arm control mode")
+        # self.ddr.add_variable("ctrl_mode", "desired control mode", 0, 0, 3, edit_method=self.input_enum)
 
 
-    def print_state(self):
+        # # Start Server
+        self.ddr.start(self.dynamic_reconfigure_callback)
+        rospy.sleep(1)
+
+
+    def dynamic_reconfigure_callback(self, config, level):
+
         '''
-        Prints state for user.
+        Updates parameters value when changed by the user.
+        ----------
+        Parameters
+        ----------
+        config: dict
+            Keys are param names and values are param values
+        level: Unused
+        -------
+        Returns
+        -------
+        config: dict
+            Keys are param names and values are param values
         '''
-        print("Controlling axis: " + self.axes[self.curr_axis])
+        # Update variables
+        var_names = self.ddr.get_variable_names()
+        for var_name in var_names:
+            self.__dict__[var_name] = config[var_name]
+        return config
 
-
-    def change_axis(self, direction):
+    def change_joint(self, direction):
         '''
-        Change current axis
+        Change current joint
         ----------
         Parameters
         ----------
@@ -72,26 +102,48 @@ class PosTeleopNode():
         '''
         if time.time() - self.last_change > 0.3:
             if direction >= 1:
-                new_axis = (self.curr_axis + 1) % self.num_axis 
-                self.curr_axis = new_axis
+                new_joint = (self.curr_joint + 1) % self.num_joints 
+                self.curr_joint = new_joint
                 self.last_change = time.time()
             else:
-                new_axis = (self.curr_axis - 1) % self.num_axis 
-                self.curr_axis = new_axis
+                new_joint = (self.curr_joint - 1) % self.num_joints 
+                self.curr_joint = new_joint
                 self.last_change = time.time()
-            self.print_state()
+            self.print_joint()
 
+    def change_mode(self):
+        '''
+        Changes arm control mode
+        '''
+        if time.time() - self.last_change > 0.3:
+            # Send zero command
+            self.cmd = Command()
+            self.cmd.mode = self.ctrl_mode
 
-    def state_callback(self, msg):
+            # Change control mode
+            self.ctrl_mode +=1
+            if self.ctrl_mode > 2:
+                self.ctrl_mode = 1
+
+            # Print activated control mode
+            self.last_change = time.time()
+            self.print_mode() 
+
+    def print_joint(self):
         '''
-        Callback from arm
-        ----------
-        Parameters
-        ----------
-        msg: JointState
-            Message from arm (sim or real)
+        Prints current controlled joint
         '''
-        self.curr_pos = list(msg.position)
+        rospy.loginfo("Controlling joint : %s", str(self.curr_joint+1))
+        
+    def print_mode(self):
+        '''
+        Prints current controlled joint
+        '''
+        if self.ctrl_mode ==1 : 
+            rospy.loginfo("Joint control activated")
+            self.print_joint()
+        else:
+            rospy.loginfo("Cartesian control activated")
 
 
     def joy_callback(self, msg):
@@ -102,29 +154,71 @@ class PosTeleopNode():
         ----------
         msg: Joy
             Message from joystick
+            
+            axes[0] -> Left joystick (left/right)
+            axes[1] -> Left joystick (up/down)
+            axes[2] -> LT
+            axes[3] -> Right joystick (left/right)
+            axes[4] -> Right joystick (up/down)
+            axes[5] -> RT
+            axes[6] -> Numpad (left/right)
+            axes[7] -> Numpad (up/down)
+
+            buttons[0] -> A
+            buttons[1] -> B
+            buttons[2] -> X
+            buttons[3] -> Y
+            buttons[4] -> LB
+            buttons[5] -> RB
+            buttons[6] -> Back
+            buttons[7] -> Start
+            buttons[8] -> Power
+            buttons[9] -> L3
+            buttons[10] -> R3
         '''
-        # Change joint if necessary
-        if msg.buttons[0]:
-            self.change_axis(-1)
-        elif msg.buttons[3]:
-            self.change_axis(1)
+        # Change control mode if necessary
+        if msg.buttons[7]:
+            self.change_mode()
 
-        # Save command
-        cmd = msg.axes[1]
-        self.cmd = Twist()
-        if self.curr_axis == 0:
-            self.cmd.linear.x = cmd
-        elif self.curr_axis == 1:
-            self.cmd.linear.y = cmd
-        elif self.curr_axis == 2:
-            self.cmd.linear.z = cmd
-        elif self.curr_axis == 3:
-            self.cmd.angular.x = cmd
-        elif self.curr_axis == 4:
-            self.cmd.angular.y = cmd
-        elif self.curr_axis == 5:
-            self.cmd.angular.z = cmd
+        # Verify active control mode
+        if self.ctrl_mode == 1 : 
+            if msg.buttons[0]:
+                self.change_joint(-1)
+            elif msg.buttons[3]:
+                self.change_joint(1)
 
+            # Only use left joystick to command
+            cmd = msg.axes[1]
+
+            # Create command structure
+            self.cmd = Command()
+            self.cmd.mode = self.ctrl_mode
+
+            # Fill command
+            if self.curr_joint == 0:
+                self.cmd.cmd.linear.x = cmd
+            elif self.curr_joint == 1:
+                self.cmd.cmd.linear.y = cmd
+            elif self.curr_joint == 2:
+                self.cmd.cmd.linear.z = cmd
+            elif self.curr_joint == 3:
+                self.cmd.cmd.angular.x = cmd
+            elif self.curr_joint == 4:
+                self.cmd.cmd.angular.y = cmd           
+
+        else:
+            # Create command structure
+            self.cmd = Command()
+            self.cmd.mode = self.ctrl_mode
+
+            # Fill command
+            self.cmd.cmd.linear.x = msg.axes[1] * self.cartesian_speed          
+            self.cmd.cmd.linear.y = msg.axes[0] * self.cartesian_speed       
+            self.cmd.cmd.linear.z = msg.axes[4] * self.cartesian_speed
+            self.cmd.cmd.angular.x = msg.axes[7]          
+            self.cmd.cmd.angular.y = msg.axes[6] 
+            self.cmd.cmd.angular.z = (msg.buttons[4] or -msg.buttons[5]) 
+        
 
     def send_cmd_callback(self, evt):
         '''
@@ -137,14 +231,15 @@ class PosTeleopNode():
         '''
         Publishes commands
         '''
-        self.twist_pub.publish(self.cmd)
+        self.cmd_pub.publish(self.cmd)
 
 
     def on_shutdown(self):
         '''
         Set commands to 0 at shutdown
         '''
-        self.cmd = Twist()
+        self.cmd = Command()
+        self.cmd.mode = self.ctrl_mode
         self.send_cmd()
 
 

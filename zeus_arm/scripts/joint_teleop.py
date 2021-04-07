@@ -4,6 +4,7 @@
 
 # Created on January 18 2021
 # @author: Simon Chamorro       simon.chamorro@usherbrooke.ca
+#          Santiago Moya        santiago.moya@usherbrooke.ca
 
 
 """
@@ -17,8 +18,9 @@ ROS Node to teleoperate the arm joint by joint
 
 import time
 import rospy
-from std_msgs.msg import Float64
+from std_msgs.msg import Float32, Float32MultiArray
 from sensor_msgs.msg import Joy, JointState
+import numpy as np
 
 
 class JointTeleopNode():
@@ -35,25 +37,29 @@ class JointTeleopNode():
 
         # Init commands in rad
         self.curr_pos = [0.0, 0.0, 0.0, 0.0, 0.0]
+        self.old_cmd = [0.0, 0.0, 0.0, 0.0, 0.0]
         self.cmd = [0.0, 0.0, 0.0, 0.0, 0.0]
+        self.cmd_j23 = [0.0, 0.0]
         self.print_state()
         self.last_change = time.time()
 
         # Init publishers
-        self.j1_pub = rospy.Publisher('/zeus_arm/joint_1_position_controller/command', Float64, queue_size=10)
-        self.j2_pub = rospy.Publisher('/zeus_arm/joint_2_position_controller/command', Float64, queue_size=10)
-        self.j3_pub = rospy.Publisher('/zeus_arm/joint_3_position_controller/command', Float64, queue_size=10)
-        self.j4_pub = rospy.Publisher('/zeus_arm/joint_4_position_controller/command', Float64, queue_size=10)
-        self.j5_pub = rospy.Publisher('/zeus_arm/joint_5_position_controller/command', Float64, queue_size=10)
+        self.j1_pub = rospy.Publisher('/zeus_arm/joint_1_velocity_controller/command', Float32, queue_size=10)
+        self.j2_pub = rospy.Publisher('/zeus_arm/joint_2_velocity_controller/command', Float32MultiArray, queue_size=10)
+        self.j4_pub = rospy.Publisher('/zeus_arm/joint_4_velocity_controller/command', Float32, queue_size=10)
+        self.j5_pub = rospy.Publisher('/zeus_arm/joint_5_velocity_controller/command', Float32, queue_size=10)
 
         # Init command loop 
-        rospy.Timer(rospy.Duration(1.0/10), self.send_cmd_callback)
+        rospy.Timer(rospy.Duration(1.0/50), self.send_cmd_callback)
 
         # Subscribe to joystick
-        self.joy_sub = rospy.Subscriber('/joy', Joy, self.joy_callback)
+        self.joy_sub = rospy.Subscriber('/joy_arm', Joy, self.joy_callback)
 
         # Subscribe to arm state
-        self.arm_sub = rospy.Subscriber('/zeus_arm/joint_states', JointState, self.state_callback)
+        self.j1_sub = rospy.Subscriber('/zeus_arm/joint_1_state', Float32, self.j1_state_callback)
+        self.j2_sub = rospy.Subscriber('/zeus_arm/joint_2_state', Float32, self.j2_state_callback)
+        self.j4_sub = rospy.Subscriber('/zeus_arm/joint_4_state', Float32, self.j4_state_callback)
+        self.j5_sub = rospy.Subscriber('/zeus_arm/joint_5_state', Float32, self.j5_state_callback)
 
 
     def print_state(self):
@@ -84,17 +90,60 @@ class JointTeleopNode():
             self.print_state()
 
 
-    def state_callback(self, msg):
+    def j1_state_callback(self, msg):
         '''
         Callback from arm
         ----------
         Parameters
         ----------
         msg: JointState
-            Message from arm (sim or real)
+            Message from arm (real)
         '''
-        self.curr_pos = list(msg.position)
+        self.curr_pos[0] = msg.data
 
+    def j2_state_callback(self, msg):
+        '''
+        Callback from arm
+        ----------
+        Parameters
+        ----------
+        msg: JointState
+            Message from arm (real)
+        '''
+        self.curr_pos[1] = msg.data
+
+    def j3_state_callback(self, msg):
+        '''
+        Callback from arm
+        ----------
+        Parameters
+        ----------
+        msg: JointState
+            Message from arm (real)
+        '''
+        self.curr_pos[2] = msg.data
+
+    def j4_state_callback(self, msg):
+        '''
+        Callback from arm
+        ----------
+        Parameters
+        ----------
+        msg: JointState
+            Message from arm (real)
+        '''
+        self.curr_pos[3] = msg.data
+
+    def j5_state_callback(self, msg):
+        '''
+        Callback from arm
+        ----------
+        Parameters
+        ----------
+        msg: JointState
+            Message from arm (real)
+        '''
+        self.curr_pos[4] = msg.data
 
     def joy_callback(self, msg):
         '''
@@ -111,35 +160,70 @@ class JointTeleopNode():
         elif msg.buttons[3]:
             self.change_joint(1)
 
-        # Save command
-        cmd = msg.axes[1]
-        self.cmd[self.curr_joint] = self.curr_pos[self.curr_joint] + 0.3*cmd
+        # Rotating or linear joint?
+        if self.curr_joint != 1 and self.curr_joint != 2:
+            if self.curr_joint == 4 : 
+                cmd = (msg.axes[1]) * 25
+            else :
+                cmd = (msg.axes[1]) * 5
+
+            # To make it as valocity control
+            self.cmd[self.curr_joint] = self.curr_pos[self.curr_joint] + 0.5*cmd
+        else:
+            self.cmd_j23 = np.array([self.curr_joint + 1, msg.axes[1]]).flatten().tolist()
 
 
     def send_cmd_callback(self, evt):
         '''
         Send commands to joints timer
         '''
+
         self.send_cmd()
 
 
     def send_cmd(self):
         '''
-        Publishes commands
+        Publishes commands to each joint
         '''
-        self.j1_pub.publish(self.cmd[0])
-        self.j2_pub.publish(self.cmd[1])
-        self.j3_pub.publish(self.cmd[2])
-        self.j4_pub.publish(self.cmd[3])
-        self.j5_pub.publish(self.cmd[4])
+        if self.curr_joint == 0:
+            if (abs(self.old_cmd[0] - self.cmd[0]) > 0.4):
+                self.j1_pub.publish(self.cmd[0])
+                self.old_cmd[0] = self.cmd[0]
+            else:
+                self.j1_pub.publish(self.old_cmd[0])
+
+        if self.curr_joint == 1:
+            data = Float32MultiArray()
+            data.data = self.cmd_j23
+            self.j2_pub.publish(data)
+ 
+        if self.curr_joint == 2:
+            data = Float32MultiArray()
+            data.data = self.cmd_j23
+            self.j2_pub.publish(data)
+
+        if self.curr_joint == 3:
+            if (abs(self.old_cmd[3] - self.cmd[3]) > 0.4):
+                self.j4_pub.publish(self.cmd[3])
+                self.old_cmd[3] = self.cmd[3]
+            else:
+                self.j4_pub.publish(self.old_cmd[3])
+
+        if self.curr_joint == 4:
+            if (abs(self.old_cmd[4] - self.cmd[4]) > 0.4):
+                self.j5_pub.publish(self.cmd[4])
+                self.old_cmd[4] = self.cmd[4]
+            else:
+                self.j5_pub.publish(self.old_cmd[4])
+
 
 
     def on_shutdown(self):
         '''
         Set commands to 0 at shutdown
         '''
-        self.cmd = [0.0, 0.0, 0.0, 0.0, 0.0]
-        self.send_cmd()
+        #self.cmd = [0.0, 0.0, 0.0, 0.0, 0.0]
+        #self.send_cmd()
 
 
 

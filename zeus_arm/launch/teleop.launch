@@ -1,0 +1,8 @@
+<?xml version='1.0'?>
+<launch>
+  <!-- Launch robot bringup -->
+  <include file="$(find zeus_arm)/launch/bringup.launch" />
+  <!-- Launch joint control -->
+  <node pkg="zeus_arm" type="joint_teleop.py" name="joint_teleop_arm" output="screen">
+  </node>
+</launch>

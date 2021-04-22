@@ -55,6 +55,6 @@ This folder has the msg file for the custom ROS message used in the code.
 ### scripts
 This folder has all the python and C/C++ (Arduino) files to run the robot (simulation and real).
 ### urdf
-This folder has the URDF file used by gazebo to render the robot arm and its physics. It was exported using the onshape-to-robot open source package. For more details, visit : https://github.com/Rhoban/onshape-to-robot
+This folder has the URDF file used by gazebo to render the robot arm and its physics. It was exported using the onshape-to-robot open source package. For more details, visit : https://github.com/Rhoban/onshape-to-robot.
 
 

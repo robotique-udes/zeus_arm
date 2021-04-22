@@ -1,5 +1,5 @@
 # Files descritpion
-Following subsections will give a brief summary of each file and its role.
+The following subsections will give a brief summary of each file and its role.
 
 ## cam.launch
 Launch file for the usb_cam node. Image dimensions and video device can be modified inside this launch file.

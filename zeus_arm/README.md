@@ -44,17 +44,17 @@ Cartesian control mode:
 CTRL-C to quit
 ```
 ## Files structure
-### config
+#### config
 This folder contains the .yaml file for the ros_control controllers. It also has the exported perspective of the rqt interface of the arm. If you want to modify the UI's appearance, export it from rqt and save it in this file.
-### launch
+#### launch
 This folder has the necessary launch files to run the simulation or the real arm 
-### meshes
+#### meshes
 This folder has all of the exported STL files of the robot for the simulation. These are referenced to in the URDF file.
-### msg
+#### msg
 This folder has the msg file for the custom ROS message used in the code.
-### scripts
+#### scripts
 This folder has all the python and C/C++ (Arduino) files to run the robot (simulation and real).
-### urdf
+#### urdf
 This folder has the URDF file used by gazebo to render the robot arm and its physics. It was exported using the onshape-to-robot open source package. For more details, visit : https://github.com/Rhoban/onshape-to-robot.
 
 

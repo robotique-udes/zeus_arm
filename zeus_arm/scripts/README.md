@@ -14,7 +14,8 @@ Python class for the arm. This class has the following methods:
 - ``` get_effector_pos()```: Returns end-effector's pose
 - ``` speed_controller()```: Computes joint velocity commands from cartesian commands using the inverse kinematic differential equation with speed regulation for singularity avoidance.
 
-Insert class diagram
+This fugre presents the control architecture on the real arm 
+![](imgs/controle_bras_eng.png)
 
 #### arm_node.py
 Python script that acts as a ROS node and handles the inputs and outputs of the arm's class. This node class has an instance of the arm's class as an attribute and has the following methods:

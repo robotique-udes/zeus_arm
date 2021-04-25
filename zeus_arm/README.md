@@ -1,4 +1,4 @@
-# Zeus arm
+# zeus_arm
 
 ![](imgs/arm.png)
 

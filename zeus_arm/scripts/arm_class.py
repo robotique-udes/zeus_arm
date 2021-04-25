@@ -23,8 +23,7 @@ class RoboticArm() :
 	"""
 	RoboticArm class
 	
-	5 DOF robot arm
-	
+	5 DOF robot arm	
 	"""
 	def __init__(self):
 		"""
@@ -264,25 +263,7 @@ class RoboticArm() :
 
 		return J 
 			
-	def move_to_home(self):
-		"""
-		Moves robot arm to rest position
 		
-		"""
-		q = [0,0,0,0,0,0] # set defined angles for home position
-		move_to(q)
-				
-	def move_to(self,q):
-		"""
-		Moves robot arm to deired joint space configuartion
-		
-		INPUTS
-		q  : desired robot joint space coordinates     (list 5x1)
-
-		"""
-		# TODO : code that sends joint space coordinates to all motors
-	
-	
 	def get_joint_config(self):
 		"""
 		Returns robot joint configuration
@@ -291,10 +272,7 @@ class RoboticArm() :
 		q  : current robot configuration                            (list 5x1)
 
 		"""
-		# TODO : Code that reads current robot configuration for all joint motors
-		q = np.zeros((5,1), dtype=np.float64)
-	
-		return q
+		return self.joint_angles
 	
 
 	def get_effector_pos(self):
@@ -305,10 +283,7 @@ class RoboticArm() :
 		end_effector  : current end effector coordinates     (list 3x1)
 
 		"""
-		q = get_joint_config()
-		self.end_effector = forward_kinematics(q)
-		
-		return end_effector
+		return self.forward_kinematics(self.joint_angles) 
 
 
 	def speed_controller(self):
@@ -318,9 +293,6 @@ class RoboticArm() :
 		OUTPUTS
 		cmd_to_motors  : position command for motors     (list 5x1)
 		"""
-		# J_inv = np.linalg.pinv(J) 
-		# q_dot = np.dot(J_inv,self.ref_cmd)
-   
 		q_dot = np.zeros((5,1), dtype = np.float64)
 		J = self.jacobian_matrix()
 		Jt = J.T

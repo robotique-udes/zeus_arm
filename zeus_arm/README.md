@@ -18,6 +18,8 @@ The main difference between the simulation and the actual robot is the low-level
 control loop and sends the resulting commands to the motor drivers for each joint. The Arduino also reads the encoders positions and sends them back to the arm's onboard PC (Jetson Nano)
 . In the simulation, this part is handled by the ros_control package, which simulates fake controllers for the robot's joints. In both cases, an user interface will appear when launching the robot. This interface lets the user modify the desired cartesian speed of the robot and the lambda gain of the singularity avoidance algorithm, which determines how much it is accepted to deviate from the robot's trajectory to avoid a singular position. There is also a video feed for the camera on the robot's wrist. The video feed is only available on the real robot.
 
+![](imgs/arm_interface.png)
+
 The robot is controlled with an Xbox controller
 
 ```

@@ -46,7 +46,7 @@ int vel_cmd_5 = 0;
 
 
 void messageCb( const std_msgs::Float64MultiArray& cmd_msg){
-  vel_cmd_1 = int(map_cmd(cmd_msg.data[0], -1.0, 1.0, 0, 180));
+  vel_cmd_1 = 180 - int(map_cmd(cmd_msg.data[0], -1.0, 1.0, 0, 180));
   vel_cmd_2 = int(map_cmd(cmd_msg.data[1], -1.0, 1.0, -255.0, 255.0)); 
   vel_cmd_3 = int(map_cmd(cmd_msg.data[2], -1.0, 1.0, -255.0, 255.0)); 
   vel_cmd_4 = int(map_cmd(cmd_msg.data[3], -1.0, 1.0, -255.0, 255.0)); 
@@ -55,7 +55,7 @@ void messageCb( const std_msgs::Float64MultiArray& cmd_msg){
 //  nh.loginfo(outstr);
   }  
   
-ros::Subscriber<std_msgs::Float64MultiArray> sub("/zeus_arm/joint_cmds", &messageCb );
+ros::Subscriber<std_msgs::Float64MultiArray> sub("/zeus_arm/joint_commands", &messageCb );
 
 float map_cmd(float x, float in_min, float in_max, float out_min, float out_max) {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
@@ -89,7 +89,7 @@ void loop() {
   motor1.write(vel_cmd_1);
   motor2.setSpeed(vel_cmd_2);
   motor3.setSpeed(vel_cmd_3);
-  motor4.setSpeed(vel_cmd_4);
+  motor4.setSpeed(-vel_cmd_4);
   motor5.setSpeed(vel_cmd_5);
 
   nh.spinOnce();

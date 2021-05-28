@@ -42,7 +42,7 @@ class ArmNode():
         rospy.Subscriber("/zeus_arm/cmd_vel", Command, self.set_cmd)
 
         # Init publishers
-        self.cmd_pub = rospy.Publisher('/zeus_arm/joint_cmds', Float64MultiArray, queue_size=10)
+        self.cmd_pub = rospy.Publisher('/zeus_arm/joint_commands', Float64MultiArray, queue_size=10)
         
         # Control loop @40Hz
         rospy.Timer(rospy.Duration(1.0/50),self.speed_controller)

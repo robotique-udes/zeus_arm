@@ -225,22 +225,22 @@ class RoboticArm() :
 
 		q = self.joint_angles
 
-		J[0][0] = -(l2 + l3 * c(q[1]) + l4 *c(q[1] + q[2] + np.pi) + l5 * c(q[1] + q[2] + q[3] + np.pi)) * s(q[0])
-		J[0][1] = (l3 * c(q[1]) - l4 * s(q[1] + q[2] + np.pi) - l5 * s(q[1] + q[2] + q[3] + np.pi)) * c(q[0])
-		J[0][2] = (-l4 * s(q[1] + q[2] + np.pi) - l5 * s(q[1] + q[2] + q[3] + np.pi)) * c(q[0])
-		J[0][3] = (-l5 * s(q[1] + q[2] + q[3] + np.pi)) * c(q[0])
+		J[0][0] = -(l2 + l3 * c(q[1]) + l4 *c((np.pi-q[1]) + q[2] + np.pi) + l5 * c((np.pi-q[1]) + q[2] + q[3] + np.pi)) * s(q[0])
+		J[0][1] = (-l3 * s(q[1]) - l4 * s((np.pi-q[1]) + q[2] + np.pi) - l5 * s((np.pi-q[1]) + q[2] + q[3] + np.pi)) * c(q[0])
+		J[0][2] = (-l4 * s((np.pi-q[1]) + q[2] + np.pi) - l5 * s((np.pi-q[1]) + q[2] + q[3] + np.pi)) * c(q[0])
+		J[0][3] = (-l5 * s((np.pi-q[1]) + q[2] + q[3] + np.pi)) * c(q[0])
 		J[0][4] = 0.
 
-		J[1][0] = -(l2 + l3 * c(q[1]) + l4 *c(q[1] + q[2] + np.pi) + l5 * c(q[1] + q[2] + q[3] + np.pi)) * c(q[0])
-		J[1][1] = -(l3 * c(q[1]) - l4 * s(q[1] + q[2] + np.pi) - l5 * s(q[1] + q[2] + q[3] + np.pi)) * s(q[0])
-		J[1][2] = -(-l4 * s(q[1] + q[2] + np.pi) - l5 * s(q[1] + q[2] + q[3] + np.pi)) * s(q[0])
-		J[1][3] = -(-l5 * s(q[1] + q[2] + q[3] + np.pi)) * s(q[0])
+		J[1][0] = -(l2 + l3 * c(q[1]) + l4 *c((np.pi-q[1]) + q[2] + np.pi) + l5 * c((np.pi-q[1]) + q[2] + q[3] + np.pi)) * c(q[0])
+		J[1][1] = -(-l3 * s(q[1]) - l4 * s((np.pi-q[1]) + q[2] + np.pi) - l5 * s((np.pi-q[1]) + q[2] + q[3] + np.pi)) * s(q[0])
+		J[1][2] = -(-l4 * s((np.pi-q[1]) + q[2] + np.pi) - l5 * s((np.pi-q[1]) + q[2] + q[3] + np.pi)) * s(q[0])
+		J[1][3] = -(-l5 * s((np.pi-q[1]) + q[2] + q[3] + np.pi)) * s(q[0])
 		J[1][4] = 0.
 
 		J[2][0] = 0.
-		J[2][1] = -l3 * s(q[1]) + l4 * c(q[1] + q[2] + np.pi) + l5 * c(q[1] + q[2] + q[3] + np.pi)
-		J[2][2] = l4 * c(q[1] + q[2] + np.pi) + l5 * c(q[1] + q[2] + q[3] + np.pi)
-		J[2][3] = l5 * c(q[1] + q[2] + q[3] + np.pi)
+		J[2][1] = l3 * c(q[1]) + l4 * c((np.pi-q[1]) + q[2] + np.pi) + l5 * c((np.pi-q[1]) + q[2] + q[3] + np.pi)
+		J[2][2] = l4 * c((np.pi-q[1]) + q[2] + np.pi) + l5 * c((np.pi-q[1])+ q[2] + q[3] + np.pi)
+		J[2][3] = l5 * c((np.pi-q[1]) + q[2] + q[3] + np.pi)
 		J[2][4] = 0.
 
 		J[3][0] = 0.

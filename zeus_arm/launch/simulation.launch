@@ -19,7 +19,7 @@
 		args="-urdf -param robot_description -model zeus_arm -robot_namespace /zeus_arm 
 		              -x 0 
                       -y 0 
-                      -z 0
+                      -z 0.5
                       -J joint_1 0
                       -J joint_2 0
                       -J joint_3 0

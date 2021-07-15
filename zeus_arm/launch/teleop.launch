@@ -1,17 +1,17 @@
 <?xml version='1.0'?>
 <launch>
 <!-- Start rosserial -->
-  <node pkg="rosserial_python" type="serial_node.py" name="serial_node" output="screen">
+ <!-- <node pkg="rosserial_python" type="serial_node.py" name="serial_node" output="screen">
         <param name="~port" value="/dev/ttyACM0" />
         <param name="~baud" value="57600" />
-  </node>
+  </node> -->
 
 <!-- Launch robot bringup -->
 <include file="$(find zeus_arm)/launch/bringup.launch" />
 
 <!-- Launch teleop script -->
-<node name="teleop_node" pkg="zeus_arm" type="pos_teleop_test.py" output="screen" />
+<node name="teleop_node" pkg="zeus_arm" type="pos_teleop_real.py" output="screen" />
 
 <!-- Launch arm node -->
-<node name="arm_node" pkg="zeus_arm" type="arm_node_test.py" output="screen" />
+<node name="arm_node" pkg="zeus_arm" type="arm_node_teleop.py" output="screen" />
 </launch>

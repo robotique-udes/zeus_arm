@@ -50,7 +50,7 @@ class ArmNode():
         self.j5_pub = rospy.Publisher('/zeus_arm/joint_5_velocity_controller/command', Float64, queue_size=10)
         
         # Control loop @40Hz
-        rospy.Timer(rospy.Duration(1.0/50),self.speed_controller)
+        rospy.Timer(rospy.Duration(0.3),self.speed_controller)
 
 
     def speed_controller(self,event):
@@ -115,7 +115,12 @@ class ArmNode():
         '''
 
         # Update joint angles
-        self.robot.joint_angles = np.array(list(msg.position))
+        # self.robot.joint_angles = np.array(list(msg.position))
+        self.robot.joint_angles[0] = msg.position[0]
+        self.robot.joint_angles[1] = msg.position[1]
+        self.robot.joint_angles[2] = msg.position[2]
+        self.robot.joint_angles[3] = msg.position[3]
+        self.robot.joint_angles[4] = msg.position[4]
         
         # Update theta parameters
         self.robot.t_dh[0] = 0.

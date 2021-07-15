@@ -56,7 +56,7 @@ class PosTeleopNode():
 
         # # Add variables to ddr(name, description, default value, min, max, edit_method)        
         # # Model Settings
-        self.ddr.add_variable("cartesian_speed", "float", 0.5, 0, 10)
+        self.ddr.add_variable("cartesian_speed", "float", 0.05, 0, 10)
         # self.inputs = ['Joint', 'Cartesian']
         # self.input_enum = self.ddr.enum([ self.ddr.const("Cartesian", "int", 2, "Cartesian"),
         #                                  self.ddr.const("Joint", "int", 1, "Joint")],
@@ -179,8 +179,11 @@ class PosTeleopNode():
             buttons[10] -> R3
         '''
         # Change control mode if necessary
-        # if msg.buttons[7]:
-        #     self.change_mode()
+        if msg.buttons[7]:
+            self.change_mode()
+
+        # Save gripper command
+        gripper = (msg.buttons[1] or -msg.buttons[2])
 
         # Verify active control mode
         if self.ctrl_mode == 1 : 
@@ -191,35 +194,38 @@ class PosTeleopNode():
 
             # Only use left joystick to command
             cmd = msg.axes[1]
+            
 
             # Create command structure
             self.cmd = Command()
             self.cmd.mode = self.ctrl_mode
+            self.cmd.gripper_cmd = gripper
 
             # Fill command
             if self.curr_joint == 0:
-                self.cmd.cmd.linear.x = cmd
+                self.cmd.cmd.linear.x = cmd * self.cartesian_speed 
             elif self.curr_joint == 1:
-                self.cmd.cmd.linear.y = cmd
+                self.cmd.cmd.linear.y = cmd * self.cartesian_speed 
             elif self.curr_joint == 2:
-                self.cmd.cmd.linear.z = cmd
+                self.cmd.cmd.linear.z = cmd * self.cartesian_speed 
             elif self.curr_joint == 3:
-                self.cmd.cmd.angular.x = cmd
+                self.cmd.cmd.angular.x = cmd * self.cartesian_speed 
             elif self.curr_joint == 4:
-                self.cmd.cmd.angular.y = cmd           
+                self.cmd.cmd.angular.y = cmd  * self.cartesian_speed          
 
         else:
             # Create command structure
             self.cmd = Command()
             self.cmd.mode = self.ctrl_mode
+            self.cmd.gripper_cmd = gripper
 
             # Fill command
             self.cmd.cmd.linear.x = msg.axes[1] * self.cartesian_speed          
             self.cmd.cmd.linear.y = msg.axes[0] * self.cartesian_speed       
             self.cmd.cmd.linear.z = msg.axes[4] * self.cartesian_speed
-            self.cmd.cmd.angular.x = msg.axes[7]          
-            self.cmd.cmd.angular.y = msg.axes[6] 
-            self.cmd.cmd.angular.z = (msg.buttons[4] or -msg.buttons[5]) 
+            self.cmd.cmd.angular.x = msg.axes[7] * self.cartesian_speed         
+            self.cmd.cmd.angular.y = msg.axes[6] * self.cartesian_speed
+            self.cmd.cmd.angular.z = (msg.buttons[4] or -msg.buttons[5]) * self.cartesian_speed
         
 
     def send_cmd_callback(self, evt):

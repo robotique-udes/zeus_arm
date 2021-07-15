@@ -451,6 +451,7 @@ void loop() {
 
   time_now = millis();
   button.update();
+  joint_1.updateMovingAvgExp();
   joint_2.updateMovingAvgExp();
   joint_3.updateMovingAvgExp();
   joint_4.updateMovingAvgExp();

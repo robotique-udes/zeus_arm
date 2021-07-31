@@ -18,7 +18,7 @@
 /********************** Constants **********************/
 // J1
 #define dirPinm1 49
-#define pwmPinm1 9
+#define pwmPinm1 8
 
 
 // J2
@@ -52,7 +52,7 @@
 #define U_RAD 4
 
 // Button
-#define BUTTON_PIN 8  
+#define BUTTON_PIN 9  
 /********************** Constants **********************/
 
 

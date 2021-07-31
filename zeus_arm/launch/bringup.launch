@@ -15,6 +15,6 @@
     <remap from="joy" to="$(arg joy_topic)" />
   </node>
 
-<include file="$(find zeus_arm)/launch/cam.launch" />  
+<!-- <include file="$(find zeus_arm)/launch/cam.launch" />   -->
 
 </launch>

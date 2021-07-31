@@ -8,6 +8,7 @@
 
 <!-- Launch robot bringup -->
 <include file="$(find zeus_arm)/launch/bringup.launch" />
+<include file="$(find zeus_arm)/launch/jetson.launch" />
 
 <!-- Launch teleop script -->
 <node name="teleop_node" pkg="zeus_arm" type="pos_teleop_real.py" output="screen" />

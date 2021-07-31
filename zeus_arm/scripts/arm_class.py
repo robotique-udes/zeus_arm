@@ -39,10 +39,10 @@ class RoboticArm() :
 		self.l5 = 0.131542
 
 		# DH parameters are in order from world to end-effector        
-		self.r_dh = np.array([0.,      0.,       0.73375, 0.5866,  0.,      0.]) 
-		self.d_dh = np.array([0.15255, 0.06405,  0.,      0.,      0.01349,      0.25664])
-		self.t_dh = np.array([0.,      0.,       0.,      0.,      0.,      0.])
-		self.a_dh = np.array([0.,      np.pi/2,  0.,      0.,      np.pi/2, 0.])
+		self.r_dh = np.array([0.,      0.266,       0.53925, 0.45135,  0.,         0.])
+		self.d_dh = np.array([0.05651, 0.09766,     0.,      0.,      -0.00098,   -0.13705])
+		self.t_dh = np.array([0.,      0.,          0.,      0.,       0.,         0.])
+		self.a_dh = np.array([0.,      -np.pi/2,    0.,      0.,      -np.pi/2,    0.])
 
 		# Robot state
 		self.ref_cmd = np.zeros((6,1), dtype=np.float64)
@@ -198,7 +198,7 @@ class RoboticArm() :
 		r[4] = theta_y
 		r[5] = theta_z
 
-		return r
+		return r,WTG
 
 
 	def jacobian_matrix(self):
@@ -261,6 +261,42 @@ class RoboticArm() :
 		J[5][3] = 0.
 		J[5][4] = 0.
 
+		# J[0][0] = -(l2 + l3 * s(q[1]) + l4 *c(q[1] + q[2] + np.pi) + l5 * c(q[1] + q[2] + q[3] + np.pi)) * s(q[0])
+		# J[0][1] = (l3 * c(q[1]) - l4 * s(q[1] + q[2] + np.pi) - l5 * s(q[1] + q[2] + q[3] + np.pi)) * c(q[0])
+		# J[0][2] = (-l4 * s(q[1] + q[2] + np.pi) - l5 * s(q[1] + q[2] + q[3] + np.pi)) * c(q[0])
+		# J[0][3] = (-l5 * s(q[1] + q[2] + q[3] + np.pi)) * c(q[0])
+		# J[0][4] = 0.
+
+		# J[1][0] = -(l2 + l3 * s(q[1]) + l4 *c(q[1] + q[2] + np.pi) + l5 * c(q[1] + q[2] + q[3] + np.pi)) * c(q[0])
+		# J[1][1] = -(l3 * c(q[1]) - l4 * s(q[1] + q[2] + np.pi) - l5 * s(q[1] + q[2] + q[3] + np.pi)) * s(q[0])
+		# J[1][2] = -(-l4 * s(q[1] + q[2] + np.pi) - l5 * s(q[1] + q[2] + q[3] + np.pi)) * s(q[0])
+		# J[1][3] = -(-l5 * s(q[1] + q[2] + q[3] + np.pi)) * s(q[0])
+		# J[1][4] = 0.
+
+		# J[2][0] = 0.
+		# J[2][1] = -l3 * s(q[1]) + l4 * c(q[1] + q[2] + np.pi) + l5 * c(q[1] + q[2] + q[3] + np.pi)
+		# J[2][2] = l4 * c(q[1] + q[2] + np.pi) + l5 * c(q[1]+ q[2] + q[3] + np.pi)
+		# J[2][3] = l5 * c(q[1] + q[2] + q[3] + np.pi)
+		# J[2][4] = 0.
+
+		# J[3][0] = 0.
+		# J[3][1] = 0.
+		# J[3][2] = 0.
+		# J[3][3] = 0.
+		# J[3][4] = 1.
+
+		# J[4][0] = 0.
+		# J[4][1] = 1.
+		# J[4][2] = 1.
+		# J[4][3] = 1.
+		# J[4][4] = 0.
+
+		# J[5][0] = 1.
+		# J[5][1] = 0.
+		# J[5][2] = 0.
+		# J[5][3] = 0.
+		# J[5][4] = 0.
+
 		return J 
 			
 		
@@ -298,6 +334,17 @@ class RoboticArm() :
 		Jt = J.T
 		I = np.identity(5)
 		lambda2I = np.power(self.lambda_gain, 2) * I
+
+		#change referential
+		# r , transf = self.forward_kinematics()
+		# rot = np.zeros((3,3), dtype = np.float64)
+		# rot = transf[0:3,0:3]
+		# ref_world = np.zeros((6,1), dtype = np.float64)
+		# ref_world[0:3] = np.dot(rot, self.ref_cmd[0:3])
+		# ref_world[3] = self.ref_cmd[5]
+		# ref_world[4] = self.ref_cmd[4]
+		# ref_world[5] = -self.ref_cmd[3] 
+
 		q_dot = np.dot(np.dot(np.linalg.inv(np.dot(Jt,J) + lambda2I), Jt), self.ref_cmd)
 
 		return q_dot.flatten().tolist()

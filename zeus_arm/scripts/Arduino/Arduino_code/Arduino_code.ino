@@ -35,7 +35,8 @@
 
 // J5
 #define dirPinm5 43
-#define pwmPinm5 5
+#define pwmPinm5 13
+Servo myservo;
 
 // Gripper
 #define dirPinG 47
@@ -43,8 +44,8 @@
 
 // Encoders addresses
 #define joint_1_addr 0x40
-#define joint_2_addr 0x41 
-#define joint_3_addr 0x42 
+#define joint_2_addr 0x41
+#define joint_3_addr 0x42
 #define joint_4_addr 0x43
 
 // Encoders codes
@@ -52,7 +53,7 @@
 #define U_RAD 4
 
 // Button
-#define BUTTON_PIN 9  
+#define BUTTON_PIN 9
 /********************** Constants **********************/
 
 
@@ -65,11 +66,11 @@ AMS_AS5048B joint_4(joint_4_addr);
 
 
 // Motor drives
-CytronMD motor1(PWM_DIR, pwmPinm1, dirPinm1); 
-CytronMD motor2(PWM_DIR, pwmPinm2, dirPinm2);  
-CytronMD motor3(PWM_DIR, pwmPinm3, dirPinm3); 
-CytronMD motor4(PWM_DIR, pwmPinm4, dirPinm4);  
-CytronMD motor5(PWM_DIR, pwmPinm5, dirPinm5); 
+CytronMD motor1(PWM_DIR, pwmPinm1, dirPinm1);
+CytronMD motor2(PWM_DIR, pwmPinm2, dirPinm2);
+CytronMD motor3(PWM_DIR, pwmPinm3, dirPinm3);
+CytronMD motor4(PWM_DIR, pwmPinm4, dirPinm4);
+CytronMD motor5(PWM_DIR, pwmPinm5, dirPinm5);
 CytronMD gripper(PWM_DIR, pwmPinG, dirPinG);
 
 // Encoders reset button
@@ -126,14 +127,14 @@ double vel_5_old;
 
 // Velocity outputs
 int vel_cmd_1;
-int vel_cmd_2; 
-int vel_cmd_3; 
-int vel_cmd_4; 
+int vel_cmd_2;
+int vel_cmd_3;
+int vel_cmd_4;
 int vel_cmd_5;
 int gripper_cmd;
 
 // Current position
-double joint_1_pos; 
+double joint_1_pos;
 double joint_2_pos;
 double joint_3_pos;
 double joint_4_pos;
@@ -165,7 +166,7 @@ const double max_vel_5 = 1.0;
 
 
 /********************** Functions **********************/
-double MapCommand(double x, double in_min, double in_max, double out_min, double out_max) 
+double MapCommand(double x, double in_min, double in_max, double out_min, double out_max)
 {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
@@ -176,7 +177,7 @@ void SetGains( const std_msgs::Float64MultiArray& gains_msg)
   ki = gains_msg.data[1];
   kd = gains_msg.data[2];
   time_last_com = millis();
-} 
+}
 
 void MessageCallback( const std_msgs::Float64MultiArray& cmd_msg)
 {
@@ -192,41 +193,41 @@ void MessageCallback( const std_msgs::Float64MultiArray& cmd_msg)
 double GetPosition(int joint)
 {
   double joint_pos, angle_raw;
-  switch(joint)
+  switch (joint)
   {
     case 1:
       angle_raw = joint_1.getMovingAvgExp(U_RAD);
-      if (angle_raw > M_PI){
+      if (angle_raw > M_PI) {
         joint_pos = angle_raw - (2 * M_PI);
       }
-      else{
+      else {
         joint_pos = angle_raw;
       }
       break;
     case 2:
       angle_raw = joint_2.getMovingAvgExp(U_RAD);
-      if (angle_raw > M_PI){
+      if (angle_raw > M_PI) {
         joint_pos = angle_raw - (2 * M_PI);
       }
-      else{
+      else {
         joint_pos = angle_raw;
       }
       break;
     case 3:
       angle_raw = joint_3.getMovingAvgExp(U_RAD);
-      if (angle_raw > M_PI){
+      if (angle_raw > M_PI) {
         joint_pos = angle_raw - (2 * M_PI);
       }
-      else{
+      else {
         joint_pos = angle_raw;
       }
       break;
     case 4:
       angle_raw = joint_4.getMovingAvgExp(U_RAD);
-      if (angle_raw > M_PI){
+      if (angle_raw > M_PI) {
         joint_pos = angle_raw - (2 * M_PI);
       }
-      else{
+      else {
         joint_pos = angle_raw;
       }
       break;
@@ -239,7 +240,7 @@ double GetPosition(int joint)
 int CommandToPwm(double command, int joint)
 {
   int out;
-  switch(joint)
+  switch (joint)
   {
     case 1:
       out = int(MapCommand(command, -max_vel_1 , max_vel_1 , -255.0, 255.0));
@@ -254,12 +255,12 @@ int CommandToPwm(double command, int joint)
       out = int(MapCommand(command, -max_vel_4, max_vel_4, -255.0, 255.0));
       break;
     case 5:
-      out = int(MapCommand(command, -max_vel_5, max_vel_5, -255.0, 255.0));
+      out = int(MapCommand(command, -1.0, 1.0, 0, 180));
       break;
     // gripper
     case 6:
       out = int(MapCommand(command, -1.0, 1.0, -255.0, 255.0));
-      
+
   }
 
   return out;
@@ -267,7 +268,7 @@ int CommandToPwm(double command, int joint)
 
 void SetPwm(int pwm, int joint)
 {
-  switch(joint)
+  switch (joint)
   {
     case 1:
       motor1.setSpeed(pwm);
@@ -281,8 +282,8 @@ void SetPwm(int pwm, int joint)
     case 4:
       motor4.setSpeed(-pwm);
       break;
-    case 5: 
-      motor5.setSpeed(pwm);
+    case 5:
+      myservo.write(pwm);
       break;
     // gripper
     case 6:
@@ -293,28 +294,28 @@ void SetPwm(int pwm, int joint)
 double Pid(double vel_ref, double current_velocity, int joint)
 {
   double out, error;
-  switch(joint)
+  switch (joint)
   {
     case 1:
       error = vel_ref - current_velocity;
       vel_1_error += error * time_period_low;
-      out = kp * error + ki * vel_1_error; 
+      out = kp * error + ki * vel_1_error;
       break;
-    
+
     case 2:
       error = vel_ref - current_velocity;
       vel_2_error += error * time_period_low;
-      out = kp * error + ki * vel_2_error; 
+      out = kp * error + ki * vel_2_error;
       break;
     case 3:
       error = vel_ref - current_velocity;
       vel_3_error += error * time_period_low;
-      out = kp * error + ki * vel_3_error; 
+      out = kp * error + ki * vel_3_error;
       break;
     case 4:
       error = vel_ref - current_velocity;
       vel_4_error += error * time_period_low;
-      out = kp * error + ki * vel_4_error; 
+      out = kp * error + ki * vel_4_error;
       break;
   }
 
@@ -335,24 +336,24 @@ void ControlLoop()
   joint_3_pos = GetPosition(3);
   joint_4_pos = GetPosition(4);
 
-  if(abs(joint_2_pos- old_pos_2)< 0.008){
-    joint_2_pos = old_pos_2; 
+  if (abs(joint_2_pos - old_pos_2) < 0.008) {
+    joint_2_pos = old_pos_2;
   }
-  if(abs(joint_3_pos- old_pos_3)< 0.008){
-    joint_3_pos = old_pos_3; 
+  if (abs(joint_3_pos - old_pos_3) < 0.008) {
+    joint_3_pos = old_pos_3;
   }
-  if(abs(joint_4_pos- old_pos_4)< 0.008){
-    joint_4_pos = old_pos_4; 
+  if (abs(joint_4_pos - old_pos_4) < 0.008) {
+    joint_4_pos = old_pos_4;
   }
 
   // Calculate velocities
-  vel_1 = (joint_1_pos-old_pos_1) / (time_period_low );
-  vel_2 = (joint_2_pos-old_pos_2) / (time_period_low / 1000.0 );
-  vel_3 = (joint_3_pos-old_pos_3) / (time_period_low / 1000.0 );
-  vel_4 = (joint_4_pos-old_pos_4) / (time_period_low / 1000.0 );
+  vel_1 = (joint_1_pos - old_pos_1) / (time_period_low );
+  vel_2 = (joint_2_pos - old_pos_2) / (time_period_low / 1000.0 );
+  vel_3 = (joint_3_pos - old_pos_3) / (time_period_low / 1000.0 );
+  vel_4 = (joint_4_pos - old_pos_4) / (time_period_low / 1000.0 );
 
-//  dtostrf(vel_4,7,3,outstr); 
-//  nh.loginfo(outstr);
+  //  dtostrf(vel_4,7,3,outstr);
+  //  nh.loginfo(outstr);
 
 
 
@@ -362,23 +363,20 @@ void ControlLoop()
 
   vel_cmd_1 = CommandToPwm(vel_ref_1, 1);
   vel_cmd_2 = CommandToPwm(vel_ref_2, 2);
-  vel_cmd_3 = CommandToPwm(vel_ref_3, 3); 
-  vel_cmd_4 = CommandToPwm(vel_ref_4, 4); 
+  vel_cmd_3 = CommandToPwm(vel_ref_3, 3);
+  vel_cmd_4 = CommandToPwm(vel_ref_4, 4);
   vel_cmd_5 = CommandToPwm(vel_ref_5, 5);
-  gripper_cmd = CommandToPwm(gripper_setpoint,6);
+  gripper_cmd = CommandToPwm(gripper_setpoint, 6);
 
-  if ((vel_cmd_2 < 0) && (joint_2_pos < -0.90)){
+  if ((vel_cmd_2 < 0) && (joint_2_pos < -2.13)) {
     vel_cmd_2 = 0;
   }
 
-  if ((vel_cmd_4 > 0) && (joint_4_pos > 0.94)){
+  if ((vel_cmd_4 > 0) && (joint_4_pos < -2.77)) {
     vel_cmd_4 = 0;
   }
 
-  if ((vel_cmd_4 < 0) && (joint_4_pos < -1.30)){
-    vel_cmd_4 = 0;
-  }
-  
+
 
   // Send commands
   SetPwm(vel_cmd_1, 1);
@@ -386,7 +384,7 @@ void ControlLoop()
   SetPwm(vel_cmd_3, 3);
   SetPwm(vel_cmd_4, 4);
   SetPwm(vel_cmd_5, 5);
-  SetPwm(gripper_cmd,6);
+  SetPwm(gripper_cmd, 6);
 
   // Update time and pos
   old_pos_1 = joint_1_pos;
@@ -424,9 +422,9 @@ void setup() {
 
   // To reset encoders
   button.attach( BUTTON_PIN ,  INPUT_PULLUP );
-  button.interval(5); 
-  button.setPressedState(LOW); 
-  
+  button.interval(5);
+  button.setPressedState(LOW);
+
   // Declare pins as output for linear joints
   pinMode(dirPinm1, OUTPUT);
   pinMode(pwmPinm1, OUTPUT);
@@ -436,8 +434,7 @@ void setup() {
   pinMode(pwmPinm3, OUTPUT);
   pinMode(dirPinm4, OUTPUT);
   pinMode(pwmPinm4, OUTPUT);
-  pinMode(dirPinm5, OUTPUT);
-  pinMode(pwmPinm5, OUTPUT);
+  myservo.attach(pwmPinm5);
 
   // Init ROS stuff
   nh.initNode();
@@ -463,24 +460,29 @@ void loop() {
     joint_2.setZeroReg();
     joint_3.setZeroReg();
     joint_4.setZeroReg();
+
+    joint_1.doProgZero();
+    joint_2.doProgZero();
+    joint_3.doProgZero();
+    joint_4.doProgZero();
   }
 
-//  if (( time_now - time_last_com ) > time_period_com ) 
-//  {
-//    vel_cmd_1_setpoint  = 0.0;
-//    vel_cmd_2_setpoint  = 0.0;
-//    vel_cmd_3_setpoint  = 0.0;
-//    vel_cmd_4_setpoint  = 0.0;
-//    vel_cmd_5_setpoint  = 0.0;
-//    //nh.loginfo("inside no com condition");
-//  }
+  //  if (( time_now - time_last_com ) > time_period_com )
+  //  {
+  //    vel_cmd_1_setpoint  = 0.0;
+  //    vel_cmd_2_setpoint  = 0.0;
+  //    vel_cmd_3_setpoint  = 0.0;
+  //    vel_cmd_4_setpoint  = 0.0;
+  //    vel_cmd_5_setpoint  = 0.0;
+  //    //nh.loginfo("inside no com condition");
+  //  }
 
-  if((time_now - time_last_low) > time_period_low )
+  if ((time_now - time_last_low) > time_period_low )
   {
     ControlLoop();
     time_last_low = time_now;
   }
-  
+
   unsigned long dt = time_now - time_last_high;
   if (dt > time_period_high ) {
 
@@ -493,7 +495,7 @@ void loop() {
     positions_data[1] = float(joint_2_pos);
     positions_data[2] = float(joint_3_pos);
     positions_data[3] = float(joint_4_pos);
-    
+
     velocities.data        = &velocities_data[0];
     velocities.data_length = velocities_msg_length;
     vel_pub.publish( &velocities );
@@ -501,10 +503,10 @@ void loop() {
     positions.data        = &positions_data[0];
     positions.data_length = positions_msg_length;
     pos_pub.publish( &positions );
-    
+
     time_last_high = time_now ;
   }
-    // Process ROS Events
-    nh.spinOnce();
+  // Process ROS Events
+  nh.spinOnce();
 
 }

@@ -37,6 +37,7 @@ class ArmNode():
         self.cmd = np.zeros((6,1),dtype=np.float64)
         self.ref_cmd = np.zeros((6,1),dtype=np.float64)
         self.ctrl_mode = 1
+        self.encoders_offset = [0.20, 0.60, -0.178, -2.54]
 
         # Init subscripers
         rospy.Subscriber("/zeus_arm/cmd_vel", Command, self.set_cmd)
@@ -120,10 +121,10 @@ class ArmNode():
         '''
 
         # Update joint angles
-        self.robot.joint_angles[0] = msg.data[0]
-        self.robot.joint_angles[1] = msg.data[1]
-        self.robot.joint_angles[2] = msg.data[2]
-        self.robot.joint_angles[3] = msg.data[3]
+        self.robot.joint_angles[0] = msg.data[0] + self.encoders_offset[0] 
+        self.robot.joint_angles[1] = msg.data[1] + self.encoders_offset[1]
+        self.robot.joint_angles[2] = msg.data[2] + self.encoders_offset[2]
+        self.robot.joint_angles[3] = msg.data[3] + self.encoders_offset[3]
         #self.robot.joint_angles[4] = msg.data[4]
         
         # Update theta parameters

@@ -42,11 +42,13 @@ Servo myservo;
 #define dirPinG 47
 #define pwmPinG 6
 
-// Encoders addresses
+// Encoders addresses and pins
 #define joint_1_addr 0x40
 #define joint_2_addr 0x41
 #define joint_3_addr 0x42
 #define joint_4_addr 0x43
+#define gripper_channel_a 6
+#define gripper_channel_b 7
 
 // Encoders codes
 #define U_DEG 3
@@ -92,6 +94,11 @@ std_msgs::Float64MultiArray velocities;
 std_msgs::Float64MultiArray positions;
 ros::Publisher vel_pub("/zeus_arm/joint_velocities", &velocities);
 ros::Publisher pos_pub("/zeus_arm/joint_positions", &positions);
+
+// Incremental encoders 
+int gripper_counter = 0;
+int gripper_achannel_state;
+int gripper_achannel_last;
 
 // PID setpoints
 double vel_cmd_1_setpoint = 0;
@@ -231,6 +238,9 @@ double GetPosition(int joint)
         joint_pos = angle_raw;
       }
       break;
+    case 6:
+      // TODO : convert ticks to position?
+      joint_pos = gripper_counter;    
   }
 
   return joint_pos;
@@ -436,6 +446,11 @@ void setup() {
   pinMode(pwmPinm4, OUTPUT);
   myservo.attach(pwmPinm5);
 
+  // Declare pins for incremental encoders
+  pinMode(gripper_channel_a, INPUT);
+  pinMode(gripper_channel_b, INPUT);
+  gripper_achannel_last = digitalRead(gripper_channel_a);
+
   // Init ROS stuff
   nh.initNode();
   nh.advertise(vel_pub);
@@ -452,6 +467,17 @@ void loop() {
   joint_2.updateMovingAvgExp();
   joint_3.updateMovingAvgExp();
   joint_4.updateMovingAvgExp();
+  gripper_achannel_state = digitalRead(gripper_channel_a);
+
+  if(gripper_achannel_state != gripper_achannel_last){
+    if(digitalRead(gripper_channel_b != gripper_achannel_state)){
+      gripper_counter++;
+    }
+    else{
+      gripper_counter--;
+    }
+  }
+  gripper_achannel_last = gripper_achannel_state;
 
   // Reset encoders 0 position if button pressed
   if ( button.pressed() ) {

@@ -18,11 +18,8 @@ ROS node containing robot arm instance
 import rospy
 import numpy as np
 from arm_class import RoboticArm
-from rospy.numpy_msg import numpy_msg
-from geometry_msgs.msg import Twist
-from zeus_arm.msg import Floats
 from std_msgs.msg import Float64MultiArray
-from sensor_msgs.msg import JointState
+from std_msgs.msg import Bool
 from zeus_arm.msg import Command
 
 class ArmNode():
@@ -48,6 +45,47 @@ class ArmNode():
         
         # Control loop @40Hz
         rospy.Timer(rospy.Duration(0.3),self.speed_controller)
+
+                # Initialize configurable params
+        # Create a DynamicDynamicReconfigure Server
+        self.ddr = DDynamicReconfigure("zeus_arm")
+
+        # Add variables to ddr(name, description, default value, min, max, edit_method)        
+        # Model Settings
+        self.ddr.add_variable("lambda_gain", "float", 0.1, 0., 10.)
+        
+
+
+        # Start Server
+        self.ddr.start(self.dynamic_reconfigure_callback)
+        rospy.sleep(1)
+
+
+    def dynamic_reconfigure_callback(self, config, level):
+
+        '''
+        Updates parameters value when changed by the user.
+        ----------
+        Parameters
+        ----------
+        config: dict
+            Keys are param names and values are param values
+        level: Unused
+        -------
+        Returns
+        -------
+        config: dict
+            Keys are param names and values are param values
+        '''
+        # Update variables
+        var_names = self.ddr.get_variable_names()
+        for var_name in var_names:
+            # Update DDR server
+            self.__dict__[var_name] = config[var_name]
+            # Update robot class
+            self.robot.lambda_gain = config[var_name]
+        return config
+
 
 
     def speed_controller(self,event):
@@ -109,6 +147,18 @@ class ArmNode():
             self.cmd[5] = msg.gripper_cmd
 
 
+    def update_calibration_status(self, msg):
+        '''
+        Callback from calibration topic
+        ----------
+        Parameters
+        ----------
+        msg: Bool
+             State of calibration. True = done, false = not done.
+        '''
+        self.calibration_done = msg.data
+
+
 
     def update_joint_states(self, msg):
         '''
@@ -141,7 +191,7 @@ if __name__ == '__main__':
         node = ArmNode()
         rospy.spin()
 
-    except rospy.ROSInterruptionException:
+    except rospy.ROSInterruptException:
         pass
 
 

@@ -35,7 +35,8 @@ class PosTeleopNode():
         self.ctrl_mode = 1
         self.curr_joint = 0
         self.num_joints = 5
-        #self.cartesian_speed = 0.5
+        self.last_received = rospy.get_time()
+        self.lost_comm_timeout = 0.1
 
         # Init command
         self.cmd = Command()
@@ -231,6 +232,8 @@ class PosTeleopNode():
             self.cmd.cmd.angular.x = msg.axes[7] * self.cartesian_speed         
             self.cmd.cmd.angular.y = msg.axes[6] * self.cartesian_speed
             self.cmd.cmd.angular.z = (msg.buttons[4] or -msg.buttons[5]) * self.J1_speed
+
+        self.last_received = rospy.get_time()
         
 
     def send_cmd_callback(self, evt):
@@ -244,7 +247,13 @@ class PosTeleopNode():
         '''
         Publishes commands
         '''
-        self.cmd_pub.publish(self.cmd)
+        elapsed_time = rospy.get_time() - self.last_received
+        if(elapsed_time < self.lost_comm_timeout):
+            self.cmd_pub.publish(self.cmd)
+        else:
+            self.cmd = Command()
+            self.cmd.mode = self.ctrl_mode
+            self.cmd_pub.publish()
 
 
     def on_shutdown(self):

@@ -1,4 +1,3 @@
-#include <ams_as5048b.h>
 
 /********************** Includes **********************/
 #include <ros.h>
@@ -6,62 +5,69 @@
 #include <std_msgs/Float64MultiArray.h>
 #include <std_msgs/Float32MultiArray.h>
 #include <std_msgs/Float64.h>
+#include <std_msgs/Bool.h>
 #include <std_msgs/Int8.h>
 #include "CytronMotorDriver.h"
 #include <PID_v1.h>
 #include <ams_as5048b.h>
 #include <Servo.h>
 #include <Bounce2.h>
+#include <digitalWriteFast.h>
 /********************** Includes **********************/
 
 
 /********************** Constants **********************/
 // J1
-#define dirPinm1 49
-#define pwmPinm1 8
+#define dirPinm1 31
+#define pwmPinm1 9
 
 
 // J2
-#define dirPinm2 31
-#define pwmPinm2 2
+#define dirPinm2 35
+#define pwmPinm2 4
+
 
 // J3
-#define dirPinm3 35
-#define pwmPinm3 3
+#define dirPinm3 39
+#define pwmPinm3 5
+
 
 // J4
-#define dirPinm4 39
-#define pwmPinm4 4
+#define dirPinm4 43
+#define pwmPinm4 7
+
 
 // J5
-#define dirPinm5 43
-#define pwmPinm5 13
-Servo myservo;
+#define dirPinm5 49
+#define pwmPinm5 8
+
 
 // Gripper
 #define dirPinG 47
 #define pwmPinG 6
 
+
 // Encoders addresses and pins
-#define joint_1_addr 0x40
 #define joint_2_addr 0x41
 #define joint_3_addr 0x42
 #define joint_4_addr 0x43
 #define gripper_channel_a 6
 #define gripper_channel_b 7
+const int joint_1_channel_a = 19;
+const int joint_1_channel_b = 18;
+#define digitalPinHall 2
 
 // Encoders codes
 #define U_DEG 3
 #define U_RAD 4
 
 // Button
-#define BUTTON_PIN 9
+#define BUTTON_PIN 8
 /********************** Constants **********************/
 
 
 /********************** Objects **********************/
 // Encoders
-AMS_AS5048B joint_1(joint_1_addr);
 AMS_AS5048B joint_2(joint_2_addr);
 AMS_AS5048B joint_3(joint_3_addr);
 AMS_AS5048B joint_4(joint_4_addr);
@@ -95,10 +101,18 @@ std_msgs::Float64MultiArray positions;
 ros::Publisher vel_pub("/zeus_arm/joint_velocities", &velocities);
 ros::Publisher pos_pub("/zeus_arm/joint_positions", &positions);
 
+
 // Incremental encoders 
 int gripper_counter = 0;
 int gripper_achannel_state;
 int gripper_achannel_last;
+int joint_1_counter = 0;
+int joint_1_achannel_state;
+int joint_1_achannel_last;
+int counts_per_revolution_j1 = 6533;
+float joint_1_ratio = (2*M_PI)/(counts_per_revolution_j1*8);
+int pwm_run = 100;
+int pwm_stop = 0;
 
 // PID setpoints
 double vel_cmd_1_setpoint = 0;
@@ -155,15 +169,16 @@ double old_pos_4 = 255.0;
 double old_pos_5 = 255.0;
 
 // Control loop periods
-const unsigned long time_period_low   = 300;    // 500 Hz for internal PID loop
-const unsigned long time_period_high  = 300;   // 50 Hz  for ROS communication
+const unsigned long time_period_low   = 300;    
+const unsigned long time_period_high  = 300;   
 const unsigned long time_period_com   = 10000; // 1000 ms = max com delay (watchdog)
 unsigned long time_now       = 0;
 unsigned long time_last_low  = 0;
 unsigned long time_last_high = 0;
-unsigned long time_last_com  = 0; //com watchdog
+unsigned long time_last_com  = 0; //comm watchdog
 
 // Max velocity values
+// TODO : REDEFINE THEM
 const double max_vel_1 = 0.20;
 const double max_vel_2 = 0.13;
 const double max_vel_3 = 0.033;
@@ -197,19 +212,28 @@ void MessageCallback( const std_msgs::Float64MultiArray& cmd_msg)
   time_last_com = millis();
 }
 
+void setBaseZeroPosition()
+{
+  int magnetDetected = digitalRead(digitalPinHall);
+  while(!digitalRead(digitalPinHall))
+  {
+    motor1.setSpeed(pwm_run);
+  }
+
+  motor1.setSpeed(pwm_stop);
+  joint_1_counter = 0; 
+  nh.loginfo("Set J1 zero");
+}
+
 double GetPosition(int joint)
 {
   double joint_pos, angle_raw;
   switch (joint)
   {
     case 1:
-      angle_raw = joint_1.getMovingAvgExp(U_RAD);
-      if (angle_raw > M_PI) {
-        joint_pos = angle_raw - (2 * M_PI);
-      }
-      else {
-        joint_pos = angle_raw;
-      }
+      joint_pos = joint_1_counter*joint_1_ratio;
+      if (joint_pos >=M_PI){joint_pos -= 2*M_PI;}
+      if (joint_pos >=M_PI){joint_pos += 2*M_PI;}
       break;
     case 2:
       angle_raw = joint_2.getMovingAvgExp(U_RAD);
@@ -265,7 +289,7 @@ int CommandToPwm(double command, int joint)
       out = int(MapCommand(command, -max_vel_4, max_vel_4, -255.0, 255.0));
       break;
     case 5:
-      out = int(MapCommand(command, -1.0, 1.0, 0, 180));
+      out = int(MapCommand(command, -max_vel_5, max_vel_5, -255.0, 255.0));
       break;
     // gripper
     case 6:
@@ -293,7 +317,7 @@ void SetPwm(int pwm, int joint)
       motor4.setSpeed(-pwm);
       break;
     case 5:
-      myservo.write(pwm);
+      motor5.setSpeed(pwm);
       break;
     // gripper
     case 6:
@@ -332,6 +356,17 @@ double Pid(double vel_ref, double current_velocity, int joint)
   return out;
 }
 
+void ModifyEncoderCount()
+{
+  int b = digitalRead(joint_1_channel_b);
+  if(b>0){
+    joint_1_counter++;
+  }
+  else{
+    joint_1_counter--;
+  }
+}
+
 void ControlLoop()
 {
   // Apply PID
@@ -357,15 +392,13 @@ void ControlLoop()
   }
 
   // Calculate velocities
-  vel_1 = (joint_1_pos - old_pos_1) / (time_period_low );
+  vel_1 = (joint_1_pos - old_pos_1) / (time_period_low / 1000.0 );
   vel_2 = (joint_2_pos - old_pos_2) / (time_period_low / 1000.0 );
   vel_3 = (joint_3_pos - old_pos_3) / (time_period_low / 1000.0 );
   vel_4 = (joint_4_pos - old_pos_4) / (time_period_low / 1000.0 );
 
   //  dtostrf(vel_4,7,3,outstr);
   //  nh.loginfo(outstr);
-
-
 
   double out_2 = Pid(vel_ref_2, vel_2, 2);
   double out_3 = Pid(vel_ref_3, vel_3, 3);
@@ -378,13 +411,15 @@ void ControlLoop()
   vel_cmd_5 = CommandToPwm(vel_ref_5, 5);
   gripper_cmd = CommandToPwm(gripper_setpoint, 6);
 
-  if ((vel_cmd_2 < 0) && (joint_2_pos < -2.13)) {
-    vel_cmd_2 = 0;
-  }
-
-  if ((vel_cmd_4 > 0) && (joint_4_pos < -2.77)) {
-    vel_cmd_4 = 0;
-  }
+  
+// TODO : joint limits
+//  if ((vel_cmd_2 < 0) && (joint_2_pos < -2.13)) {
+//    vel_cmd_2 = 0;
+//  }
+//
+//  if ((vel_cmd_4 > 0) && (joint_4_pos < -2.77)) {
+//    vel_cmd_4 = 0;
+//  }
 
 
 
@@ -421,7 +456,6 @@ void setup() {
   Serial.begin(57600);
 
   // Init absolute encoders
-  joint_1.begin();
   joint_2.begin();
   joint_3.begin();
   joint_4.begin();
@@ -444,12 +478,20 @@ void setup() {
   pinMode(pwmPinm3, OUTPUT);
   pinMode(dirPinm4, OUTPUT);
   pinMode(pwmPinm4, OUTPUT);
-  myservo.attach(pwmPinm5);
+  pinMode(dirPinm5, OUTPUT);
+  pinMode(pwmPinm5, OUTPUT);
+  
 
   // Declare pins for incremental encoders
   pinMode(gripper_channel_a, INPUT);
   pinMode(gripper_channel_b, INPUT);
-  gripper_achannel_last = digitalRead(gripper_channel_a);
+//  gripper_achannel_last = digitalReadFast(gripper_channel_a);
+
+  pinMode(joint_1_channel_a, INPUT);
+  pinMode(joint_1_channel_b, INPUT);
+  attachInterrupt(digitalPinToInterrupt(joint_1_channel_a), ModifyEncoderCount, RISING);
+//  joint_1_achannel_last = digitalReadFast(joint_1_channel_a);
+//  joint_1_counter = 0;
 
   // Init ROS stuff
   nh.initNode();
@@ -457,37 +499,25 @@ void setup() {
   nh.advertise(pos_pub);
   nh.subscribe(cmd_sub);
   nh.subscribe(gains_sub);
+
+  setBaseZeroPosition();
 }
 
 void loop() {
-
   time_now = millis();
   button.update();
-  joint_1.updateMovingAvgExp();
   joint_2.updateMovingAvgExp();
   joint_3.updateMovingAvgExp();
   joint_4.updateMovingAvgExp();
-  gripper_achannel_state = digitalRead(gripper_channel_a);
-
-  if(gripper_achannel_state != gripper_achannel_last){
-    if(digitalRead(gripper_channel_b != gripper_achannel_state)){
-      gripper_counter++;
-    }
-    else{
-      gripper_counter--;
-    }
-  }
-  gripper_achannel_last = gripper_achannel_state;
 
   // Reset encoders 0 position if button pressed
   if ( button.pressed() ) {
     nh.loginfo("Set encoders zeros to current position");
-    joint_1.setZeroReg();
+
     joint_2.setZeroReg();
     joint_3.setZeroReg();
     joint_4.setZeroReg();
 
-    joint_1.doProgZero();
     joint_2.doProgZero();
     joint_3.doProgZero();
     joint_4.doProgZero();

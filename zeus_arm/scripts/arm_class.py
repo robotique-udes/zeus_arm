@@ -47,47 +47,8 @@ class RoboticArm() :
 		# Robot state
 		self.ref_cmd = np.zeros((6,1), dtype=np.float64)
 		self.joint_angles = np.zeros(5, dtype=np.float64)
-		#self.lambda_gain = 0.1
-		# Initialize configurable params
-		# Create a DynamicDynamicReconfigure Server
-		self.ddr = DDynamicReconfigure("zeus_arm")
+		self.lambda_gain = 0.1
 
-		# Add variables to ddr(name, description, default value, min, max, edit_method)        
-		# Model Settings
-		self.ddr.add_variable("lambda_gain", "float", 0.1, 0., 10.)
-		#self.inputs = ['Joint', 'Cartesian']
-		#self.input_enum = self.ddr.enum([ self.ddr.const("Cartesian", "int", 0, "Cartesian"),
-		#								  self.ddr.const("Joint", "int", 1, "Joint")],
-		#								 "Input enum for arm control mode")
-		#self.ddr.add_variable("control_mode", "desired control mode", 0, 0, 3, edit_method=self.input_enum)
-
-
-		# Start Server
-		self.ddr.start(self.dynamic_reconfigure_callback)
-		rospy.sleep(1)
-
-
-	def dynamic_reconfigure_callback(self, config, level):
-
-		'''
-		Updates parameters value when changed by the user.
-		----------
-		Parameters
-		----------
-		config: dict
-			Keys are param names and values are param values
-		level: Unused
-		-------
-		Returns
-		-------
-		config: dict
-			Keys are param names and values are param values
-		'''
-		# Update variables
-		var_names = self.ddr.get_variable_names()
-		for var_name in var_names:
-			self.__dict__[var_name] = config[var_name]
-		return config
 
 	def dh2T(self, r , d , theta, alpha ):
 		"""  
@@ -336,16 +297,16 @@ class RoboticArm() :
 		lambda2I = np.power(self.lambda_gain, 2) * I
 
 		#change referential
-		# r , transf = self.forward_kinematics()
-		# rot = np.zeros((3,3), dtype = np.float64)
-		# rot = transf[0:3,0:3]
-		# ref_world = np.zeros((6,1), dtype = np.float64)
-		# ref_world[0:3] = np.dot(rot, self.ref_cmd[0:3])
-		# ref_world[3] = self.ref_cmd[5]
-		# ref_world[4] = self.ref_cmd[4]
-		# ref_world[5] = -self.ref_cmd[3] 
+		r , transf = self.forward_kinematics()
+		rot = np.zeros((3,3), dtype = np.float64)
+		rot = transf[0:3,0:3]
+		ref_world = np.zeros((6,1), dtype = np.float64)
+		ref_world[0:3] = np.dot(rot, self.ref_cmd[0:3])
+		ref_world[3] = self.ref_cmd[3]
+		ref_world[4] = self.ref_cmd[4]
+		ref_world[5] = -self.ref_cmd[5] 
 
-		q_dot = np.dot(np.dot(np.linalg.inv(np.dot(Jt,J) + lambda2I), Jt), self.ref_cmd)
+		q_dot = np.dot(np.dot(np.linalg.inv(np.dot(Jt,J) + lambda2I), Jt), ref_world)
 
 		return q_dot.flatten().tolist()
 

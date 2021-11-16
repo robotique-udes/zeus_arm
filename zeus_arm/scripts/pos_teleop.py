@@ -19,6 +19,8 @@ ROS Node to teleoperate the arm in caretsian position
 import time
 import rospy
 from sensor_msgs.msg import Joy, JointState
+from geometry_msgs.msg import Twist
+from std_msgs.msg import Int16
 from ddynamic_reconfigure_python.ddynamic_reconfigure import DDynamicReconfigure
 from zeus_arm.msg import Command
 
@@ -38,11 +40,12 @@ class PosTeleopNode():
         #self.cartesian_speed = 0.5
 
         # Init command
-        self.cmd = Command()
+        self.cmd = Twist()
         self.last_change = time.time()
 
         # Init publishers
-        self.cmd_pub = rospy.Publisher('/zeus_arm/cmd_vel', Command, queue_size=10)
+        self.cmd_pub = rospy.Publisher('/zeus_arm/cmd_vel_mux', Twist, queue_size=10)
+        self.ctrl_mode_pub = rospy.Publisher('/zeus_arm/ctrl_mode', Int16, queue_size=10)
 
         # Init command loop 
         rospy.Timer(rospy.Duration(1.0/50), self.send_cmd_callback)
@@ -117,8 +120,7 @@ class PosTeleopNode():
         '''
         if time.time() - self.last_change > 0.3:
             # Send zero command
-            self.cmd = Command()
-            self.cmd.mode = self.ctrl_mode
+            self.cmd = Twist()
 
             # Change control mode
             self.ctrl_mode +=1
@@ -128,6 +130,7 @@ class PosTeleopNode():
             # Print activated control mode
             self.last_change = time.time()
             self.print_mode() 
+            self.ctrl_mode_pub.publish(self.ctrl_mode)
 
     def print_joint(self):
         '''
@@ -181,43 +184,44 @@ class PosTeleopNode():
             self.change_mode()
 
         # Verify active control mode
-        if self.ctrl_mode == 1 : 
-            if msg.buttons[0]:
-                self.change_joint(-1)
-            elif msg.buttons[3]:
-                self.change_joint(1)
+        if msg.axes[5] == -1:
+            if self.ctrl_mode == 1 : 
+                if msg.buttons[0]:
+                    self.change_joint(-1)
+                elif msg.buttons[3]:
+                    self.change_joint(1)
 
-            # Only use left joystick to command
-            cmd = msg.axes[1]
+                # Only use left joystick to command
+                cmd = msg.axes[1]
 
-            # Create command structure
-            self.cmd = Command()
-            self.cmd.mode = self.ctrl_mode
+                # Create command structure
+                self.cmd = Twist()
 
-            # Fill command
-            if self.curr_joint == 0:
-                self.cmd.cmd.linear.x = cmd
-            elif self.curr_joint == 1:
-                self.cmd.cmd.linear.y = cmd
-            elif self.curr_joint == 2:
-                self.cmd.cmd.linear.z = cmd
-            elif self.curr_joint == 3:
-                self.cmd.cmd.angular.x = cmd
-            elif self.curr_joint == 4:
-                self.cmd.cmd.angular.y = cmd           
+                # Fill command
+                if self.curr_joint == 0:
+                    self.cmd.linear.x = cmd
+                elif self.curr_joint == 1:
+                    self.cmd.linear.y = cmd
+                elif self.curr_joint == 2:
+                    self.cmd.linear.z = cmd
+                elif self.curr_joint == 3:
+                    self.cmd.angular.x = cmd
+                elif self.curr_joint == 4:
+                    self.cmd.angular.y = cmd           
 
+            else:
+                # Create command structure
+                self.cmd = Twist()
+
+                # Fill command
+                self.cmd.linear.x = msg.axes[1] * self.cartesian_speed          
+                self.cmd.linear.y = msg.axes[0] * self.cartesian_speed       
+                self.cmd.linear.z = msg.axes[4] * self.cartesian_speed
+                self.cmd.angular.x = msg.axes[7]          
+                self.cmd.angular.y = msg.axes[6] 
+                self.cmd.angular.z = (msg.buttons[4] or -msg.buttons[5]) 
         else:
-            # Create command structure
-            self.cmd = Command()
-            self.cmd.mode = self.ctrl_mode
-
-            # Fill command
-            self.cmd.cmd.linear.x = msg.axes[1] * self.cartesian_speed          
-            self.cmd.cmd.linear.y = msg.axes[0] * self.cartesian_speed       
-            self.cmd.cmd.linear.z = msg.axes[4] * self.cartesian_speed
-            self.cmd.cmd.angular.x = msg.axes[7]          
-            self.cmd.cmd.angular.y = msg.axes[6] 
-            self.cmd.cmd.angular.z = (msg.buttons[4] or -msg.buttons[5]) 
+            self.cmd = Twist()
         
 
     def send_cmd_callback(self, evt):
@@ -238,8 +242,7 @@ class PosTeleopNode():
         '''
         Set commands to 0 at shutdown
         '''
-        self.cmd = Command()
-        self.cmd.mode = self.ctrl_mode
+        self.cmd = Twist()
         self.send_cmd()
 
 

@@ -28,13 +28,13 @@ Python script that acts as a ROS node and handles the inputs and outputs of the 
 - ```set_cmd(smd)```: ```/zeus_arm/cmd_vel``` callback. 
   - If control mode is set to cartesian, this function sets the ```ref_cmd``` attribute of the robot's class that is used in the inverse kinematic differential equation.
   - If control mode is set to joint, this function sets the command to send as the command received by the Xbox controller.
-- ```update_joint_states(msg)```:
+- ```update_joint_states(msg)```: updates the robot's joint configuration.
 
-#### arm_node_test.py
-Same as ```arm_node.py``` but mainly used for development tests.
+#### arm_node_real.py
+Same as ```arm_node.py``` but used for the real robot. The main difference comes from the topics this node subscribes and publishes to (different for the real robot and the gazebo simulation due to the use of `ros_control`).
 
 #### init_robot.py
-Pyhton scripts that sets gravity to 0 in Gazebo and unpauses the simulation.
+Pyhton scripts that sets gravity to 0 in Gazebo and unpauses the simulation. The gravity is set to 0 because the linear joints on the robot's arm are strong enough to hold the robot in place, so there is no need to do a gravity compensation control.
 
 #### pos_teleop.py
 Node class that handles the Xbox controler inputs and converts them to twist messages. This class has the following methods : 
@@ -50,7 +50,8 @@ Node class that handles the Xbox controler inputs and converts them to twist mes
 - ```send_cmd()```: Publishes command on ```/zeus_arm/cmd_vel``` topic.
 - ```send_cmd_callback(msg)```: Function called at 50 Hz to publish cartesian commands.
 
-#### pos_teleop_test.py
-Same as ```pos_teleop.py``` but mainly used for development tests.
-#### test_fk.py
-Python script that tests the jacobian and forward kinematic methods of the robot's class.
+#### pos_teleop_real.py
+Same as ```pos_teleop.py``` but used for development tests. The main difference comes from the topics this node subscribes and publishes to (different for the real robot and the gazebo simulation due to the use of `ros_control`).
+
+#### test_arm.py
+Python script that tests the jacobian and forward kinematic methods of the robot's class using pytest.

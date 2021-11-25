@@ -12,16 +12,15 @@ Launch file to setup the multimaster structure.
 
 #### simulation.launch
 Launch file for the gazebo simulation. In summary, this file : 
-- Runs the common launch file;
-- Launches an empty gazebo world and pauses the physics;
-- Spawns the robot using the URDF file;
-- Spawns the fake joint controllers;
-- Launches the node to monitor joint states (position, velocity and acceleration);
-- Launches the teleoperation node and the arm node;
+- Runs the common launch file.
+- Launches an empty gazebo world and pauses the physics.
+- Spawns the robot using the URDF file.
+- Spawns the fake joint controllers.
+- Launches the node to monitor joint states (position, velocity and acceleration).
+- Launches the teleoperation node and the arm node.
 - Launches a script to set the gravity to 0 in Gazebo and the unpauses the physics engine. The gravity is turned off in the simulation since the real robot's linear joints are strong enough to hold it in place when the robot is idle. This way, there is no need to compute a gravity compensation in the control loop and the simulation behaves the same as the real robot. 
 
 #### teleop.launch
 Launch file for the real robot. In summary, this file :
-- Runs the common launch file;
-- Launches the serial node from the rosserial package to allow communication between the onboard PC (Jetson Nano) and the Arduino Mega 2560 controlling the motors via USB connection.
+- Runs the common launch file.
 - Launches the teleoperation node and the arm node.

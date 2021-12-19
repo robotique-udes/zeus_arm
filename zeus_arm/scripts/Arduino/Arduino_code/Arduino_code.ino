@@ -237,6 +237,7 @@ void setBaseZeroPosition()
   nh.loginfo("Set J1 zero");
 }
 
+// TODO : finish this fonction to retract the arm before doing J1 calibration
 //void retractArm(){
 //  double j2_position = GetPosition(2);
 //  double j3_position = GetPosition(3);
@@ -305,7 +306,6 @@ double GetPosition(int joint)
   return joint_pos;
 }
 
-// TODO : modify this to map to real pwm
 int CommandToPwm(double command, int joint)
 {
   int out;
@@ -435,10 +435,6 @@ void ControlLoop()
   vel_3 = (joint_3_pos - old_pos_3) / (time_period_low / 1000.0 );
   vel_4 = (joint_4_pos - old_pos_4) / (time_period_low / 1000.0 );
 
-  //  dtostrf(vel_4,7,3,outstr);
-  //  nh.loginfo(outstr);
-
-
   double out_2 = Pid(vel_ref_2, vel_2, 2);
   double out_3 = Pid(vel_ref_3, vel_3, 3);
   double out_4 = Pid(vel_ref_4, vel_4, 4);
@@ -453,16 +449,17 @@ void ControlLoop()
 
   
   // Joint limits
-  if ((vel_cmd_2 < 0) && (joint_2_pos < -0.22)) {
-    vel_cmd_2 = 0;
-  }
-
-  if ((vel_cmd_4 < 0) && (joint_4_pos < -0.80)) {
-    vel_cmd_4 = 0;
-  }
-  if ((vel_cmd_4 > 0) && (joint_4_pos > 0.70 )) {
-    vel_cmd_4 = 0;
-  }
+  // TODO : redefine these, they are not correct.
+  //  if ((vel_cmd_2 < 0) && (joint_2_pos < -0.017)) {
+  //    vel_cmd_2 = 0;
+  //  }
+  //
+  //  if ((vel_cmd_4 < 0) && (joint_4_pos < -0.80)) {
+  //    vel_cmd_4 = 0;
+  //  }
+  //  if ((vel_cmd_4 > 0) && (joint_4_pos > 0.65 )) {
+  //    vel_cmd_4 = 0;
+  //  }
 
   // Send commands
   SetPwm(vel_cmd_1, 1);
@@ -503,7 +500,6 @@ void setup() {
   joint_4.begin();
 
   // Set direction of rotation readings
-  joint_2.setClockWise(true);
   joint_3.setClockWise(true);  
 
   // To reset encoders
@@ -544,19 +540,21 @@ void setup() {
 }
 
 void loop() {
-// if(calib_signal == 1)
-// {
+
   time_now = millis();
   button.update();
   joint_2.updateMovingAvgExp();
   joint_3.updateMovingAvgExp();
   joint_4.updateMovingAvgExp();
-
-//  if(!calibration_done){
-//    //retractArm();
-//    setBaseZeroPosition(); 
-//    
-//  }
+  
+  // TODO : test calibration and make sure that its being done everytime that the arm powers up.
+  // Launch the calibration only on the operator's signal, but make it so that the arm can't move
+  // before doing the calibration
+  //  if(!calibration_done){
+  //    retractArm();
+  //    setBaseZeroPosition(); 
+  //    
+  //  }
 
   // Reset encoders 0 position if button pressed
   if (button.pressed()) {
@@ -571,22 +569,11 @@ void loop() {
     joint_4.doProgZero();
   }
 
-  //  if (( time_now - time_last_com ) > time_period_com )
-  //  {
-  //    vel_cmd_1_setpoint  = 0.0;
-  //    vel_cmd_2_setpoint  = 0.0;
-  //    vel_cmd_3_setpoint  = 0.0;
-  //    vel_cmd_4_setpoint  = 0.0;
-  //    vel_cmd_5_setpoint  = 0.0;
-  //    //nh.loginfo("inside no com condition");
-  //  }
-
   if ((time_now - time_last_low) > time_period_low )
   {
     ControlLoop();
     time_last_low = time_now;
   }
- //}
 
   unsigned long dt = time_now - time_last_high;
   if (dt > time_period_high ) {
@@ -612,7 +599,6 @@ void loop() {
     time_last_high = time_now ;
   }
 
- 
    // Process ROS Events
   nh.spinOnce();
 }

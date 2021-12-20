@@ -17,16 +17,15 @@ def test_jacobian_matrix_home():
 
 	# Set reference matrix
 	J_ref = np.zeros((6,robot.dof), dtype=np.float64)
-	J_ref[0,:] = [0.,           1.44301602e-16,        1.44301602e-16,  3.22184979e-17,  0.]
-	J_ref[1,:] = [-1.39407700,  0.,                    0.,              0.,              0.]
-	J_ref[2,:] = [0.,           1.12846300,            5.89156000e-01,  1.31542000e-01,  0.]
+	J_ref[0,:] = [0.,           1.738489e-16,          1.738489e-16,    6.27366961e-17,  0.]
+	J_ref[1,:] = [-1.515102,    0.,                    0.,              0.,              0.]
+	J_ref[2,:] = [0.,           1.249102,              7.09792e-01,     2.56142000e-01,  0.]
 	J_ref[3,:] = [0.,           0.,                    0.,              0.,              1.]
 	J_ref[4,:] = [0., 		    1.,					   1.,		        1.,		         0.]
 	J_ref[5,:] = [1.,		    0.,					   0.,		        0.,		         0.]
 
 	# Get result
 	J = robot.jacobian_matrix()
-
 	np.testing.assert_allclose(J, J_ref, rtol=1e-5, atol=0)
 
 def test_jacobian_matrix_home_extended():
@@ -48,12 +47,9 @@ def test_jacobian_matrix_home_extended():
 	J_ref[3,:] = [0.,           0.,                    0.,              0.,              1.]
 	J_ref[4,:] = [0., 		    1.,					   1.,		        1.,		         0.]
 	J_ref[5,:] = [1.,		    0.,					   0.,		        0.,		         0.]
-	print(J_ref)
 
 	# Get result
 	J = robot.jacobian_matrix()
-	
-
 	np.testing.assert_allclose(J, J_ref, rtol=1e-5, atol=0)
 
 def test_forward_kinematics_home():
@@ -120,7 +116,7 @@ def test_forward_kinematics_extended():
 
 	# Send joint config
 	pos, _ = robot.forward_kinematics()
-
+	
 	# Verify near equality
 	np.testing.assert_allclose(pos, ref, rtol=1e-5, atol=0)
 

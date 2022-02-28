@@ -35,7 +35,7 @@ class PosTeleopNode():
         # Control mode, 1 = joint control, 2 = cartesian control
         self.ctrl_mode = 1
         self.curr_joint = 0
-        self.num_joints = 5
+        self.num_joints = 6
         self.last_received = rospy.get_time()
         self.lost_comm_timeout = 0.1
 
@@ -60,11 +60,12 @@ class PosTeleopNode():
         # # Add variables to ddr(name, description, default value, min, max, edit_method)        
         # # Model Settings
         self.ddr.add_variable("cartesian_speed", "float", 0.05, 0, 10)
-        self.ddr.add_variable("J1_speed", "float", 0.1, 0, 10)
-        self.ddr.add_variable("J2_speed", "float", 0.1, 0, 10)
-        self.ddr.add_variable("J3_speed", "float", 0.1, 0, 10)
+        self.ddr.add_variable("J1_speed", "float", 1, 0, 10)
+        self.ddr.add_variable("J2_speed", "float", 1, 0, 10)
+        self.ddr.add_variable("J3_speed", "float", 1, 0, 10)
         self.ddr.add_variable("J4_speed", "float", 1, 0, 10)
         self.ddr.add_variable("J5_speed", "float", 1, 0, 10)
+        self.ddr.add_variable("J6_speed", "float", 1, 0, 10)
         # self.inputs = ['Joint', 'Cartesian']
         # self.input_enum = self.ddr.enum([ self.ddr.const("Cartesian", "int", 2, "Cartesian"),
         #                                  self.ddr.const("Joint", "int", 1, "Joint")],
@@ -226,7 +227,9 @@ class PosTeleopNode():
             elif self.curr_joint == 3:
                 self.cmd.cmd.angular.x = cmd * self.J4_speed 
             elif self.curr_joint == 4:
-                self.cmd.cmd.angular.y = cmd  * self.J5_speed          
+                self.cmd.cmd.angular.y = cmd  * self.J5_speed 
+            elif self.curr_joint == 5:
+                self.cmd.cmd.angular.z = cmd  * self.J6_speed         
 
         else:
             # Create command structure

@@ -1,1 +1,1 @@
-sudo chmod 666 /dev/ttyAM0
+sudo chmod 666 /dev/ttyACM0

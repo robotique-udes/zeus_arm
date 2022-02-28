@@ -229,7 +229,8 @@ class PosTeleopNode():
             elif self.curr_joint == 4:
                 self.cmd.cmd.angular.y = cmd * self.J5_speed 
             elif self.curr_joint == 5:
-                self.cmd.cmd.angular.z = cmd * self.J6_speed         
+                self.cmd.cmd.angular.z = cmd * self.J6_speed 
+                print(self.cmd.cmd.angular.z)       
 
         else:
             # Create command structure

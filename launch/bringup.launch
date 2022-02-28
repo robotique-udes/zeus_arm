@@ -4,7 +4,6 @@
 
   <!-- Common launch file for simulation and real robot -->
   <node name = "arm_rqt" pkg = "rqt_gui" type = "rqt_gui" respawn = "false" output = "screen" args = "--perspective-file $(find zeus_arm)/config/zeus_arm_gui.perspective"/>  
-  </node>
 
   <!-- Launch teleop script -->
   <node name="teleop_node" pkg="zeus_arm" type="pos_teleop_real.py" output="screen" />

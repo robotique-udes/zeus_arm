@@ -135,7 +135,7 @@ class ArmNode():
             self.cmd[3] = msg.cmd.angular.x
             self.cmd[4] = msg.cmd.angular.y
             # Gripper
-            self.cmd[5] = msg.gripper_cmd
+            self.cmd[5] = msg.cmd.angular.z
 
         else:
             self.ctrl_mode = 2

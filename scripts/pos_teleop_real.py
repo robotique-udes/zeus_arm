@@ -261,7 +261,6 @@ class PosTeleopNode():
         '''
         elapsed_time = rospy.get_time() - self.last_received
         if(elapsed_time < self.lost_comm_timeout):
-            print(self.cmd)
             self.cmd_pub.publish(self.cmd)
         else:
             self.cmd = Command()

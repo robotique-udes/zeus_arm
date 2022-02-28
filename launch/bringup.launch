@@ -1,17 +1,20 @@
 <?xml version='1.0'?>
 <launch>
+  <include file="$(find steve_control)/launch/multi_master.launch" />
+
   <!-- Common launch file for simulation and real robot -->
   <node name = "arm_rqt" pkg = "rqt_gui" type = "rqt_gui" respawn = "false" output = "screen" args = "--perspective-file $(find zeus_arm)/config/zeus_arm_gui.perspective"/>  
+  </node>
 
-  <!-- Launch joystick ROS drivers -->
-  <arg name="joy_dev" default="/dev/input/js0" />
-  <arg name="joy_topic" default="joy_arm" />
-  
-  <node pkg="joy" type="joy_node" name="joy_node_arm">
-    <param name="dev" value="$(arg joy_dev)" />
-    <param name="deadzone" value="0.1" />
-    <param name="autorepeat_rate" value="20.0" /> 
-    <remap from="joy" to="$(arg joy_topic)" />
+  <!-- Launch teleop script -->
+  <node name="teleop_node" pkg="zeus_arm" type="pos_teleop_real.py" output="screen" />
+
+  <!-- Launch arm node -->
+  <node name="arm_node" pkg="zeus_arm" type="arm_node_real.py" output="screen" />
+
+  <!-- Launch rosserial_arduino node -->
+  <node name="arduino_serial" pkg="rosserial_arduino" type="serial_node.py">
+    <param name="_port" value="/dev/ttyACM0" />
   </node>
 
 </launch>

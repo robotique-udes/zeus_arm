@@ -151,18 +151,16 @@ void setup() {
 
 void loop() {
   time_now = millis();
-  double cmd_j3 = -0.1;
   
   if ((time_now - time_last_low) > TIME_PERIOD_LOW )
   {
-    motor3.vel_setpoint = cmd_j3;
     //Serial.println("You ugly");
-    //motor1.SendCmd();
-    //motor2.SendCmd();
+    motor1.SendCmd();
+    motor2.SendCmd();
     motor3.SendCmd();
-    //motor4.SendCmd();
-    //motor5.SendCmd();
-    //motor6.SendCmd();
+    motor4.SendCmd();
+    motor5.SendCmd();
+    motor6.SendCmd();
     
     time_last_low = time_now; 
   }

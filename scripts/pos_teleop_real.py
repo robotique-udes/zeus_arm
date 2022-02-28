@@ -215,7 +215,7 @@ class PosTeleopNode():
             # Create command structure
             self.cmd = Command()
             self.cmd.mode = self.ctrl_mode
-            self.cmd.gripper_cmd = gripper
+            #self.cmd.gripper_cmd = gripper
 
             # Fill command
             if self.curr_joint == 0:
@@ -227,9 +227,9 @@ class PosTeleopNode():
             elif self.curr_joint == 3:
                 self.cmd.cmd.angular.x = cmd * self.J4_speed 
             elif self.curr_joint == 4:
-                self.cmd.cmd.angular.y = cmd  * self.J5_speed 
+                self.cmd.cmd.angular.y = cmd * self.J5_speed 
             elif self.curr_joint == 5:
-                self.cmd.cmd.angular.z = cmd  * self.J6_speed         
+                self.cmd.cmd.angular.z = cmd * self.J6_speed         
 
         else:
             # Create command structure

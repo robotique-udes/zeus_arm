@@ -84,12 +84,12 @@ void Motor::CheckForComm()
 {
   if (millis() - _time_last_com > TIME_PERIOD_COM)
     vel_setpoint = 0.0;
-    Serial.println("Nocomm");
+    //Serial.println("Nocomm");
 }
 
 void Motor::SendCmd()
 {
-  //CheckForComm();
+  CheckForComm();
   
   //Keep only the sign
   if (abs(vel_setpoint) > 1)
@@ -102,8 +102,8 @@ void Motor::SendCmd()
   if (abs(pwm) < _min_speed_threshold) 
     pwm = 0; 
 
-  Serial.println(pwm);
-  //_motor.setSpeed(pwm);
+  //Serial.println(pwm);
+  _motor.setSpeed(pwm);
 }
 
 /********************** CALLBACKS **********************/

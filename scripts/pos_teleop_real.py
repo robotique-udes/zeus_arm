@@ -229,8 +229,7 @@ class PosTeleopNode():
             elif self.curr_joint == 4:
                 self.cmd.cmd.angular.y = cmd * self.J5_speed 
             elif self.curr_joint == 5:
-                self.cmd.cmd.angular.z = cmd * self.J6_speed 
-                print(self.cmd.cmd.angular.z)       
+                self.cmd.cmd.angular.z = cmd * self.J6_speed        
 
         else:
             # Create command structure
@@ -262,6 +261,7 @@ class PosTeleopNode():
         '''
         elapsed_time = rospy.get_time() - self.last_received
         if(elapsed_time < self.lost_comm_timeout):
+            print(self.cmd)
             self.cmd_pub.publish(self.cmd)
         else:
             self.cmd = Command()

@@ -108,10 +108,10 @@ void Motor::SendCmd()
 
 /********************** CALLBACKS **********************/
 
-Motor motor1(1, 2, 0.3, 0.1);
+Motor motor1(2, 1, 0.7, 0.1);
 Motor motor2(3, 4, 0.5, 0.1);
 Motor motor3(5, 6, 0.5, 0.1);
-Motor motor4(7, 8, 0.5, 0.1);
+Motor motor4(7, 8, 0.7, 0.1);
 Motor motor5(9, 10, 0.5, 0.1);
 Motor motor6(11, 12, 0.3, 0.1);
         

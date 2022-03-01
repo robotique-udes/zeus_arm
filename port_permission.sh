@@ -1,7 +1,5 @@
 while :
 do
-echo "Testing";
-sudo chmod 666 /dev/ttyACM0;
+echo "Looping...";
 sleep 30;
 done
-

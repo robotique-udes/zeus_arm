@@ -46,7 +46,7 @@ class PosTeleopNode():
         # Init publishers
         self.cmd_pub = rospy.Publisher('/zeus_arm/cmd_vel', Command, queue_size=10)
         self.calib_pub = rospy.Publisher('/zeus_arm/calib_cmd', Int16, queue_size=10)
-        self.State_controller_joint = rospy('/zeus_arm/status/ctrl_joint_nb', Int16 queue_size=10)
+        self.State_controller_joint = rospy('/zeus_arm/status/ctrl_joint_nb', Int16, queue_size=10)
 
         # State publisher rate (in Hz)
         self.rate = rospy.Rate(2) #2 Hz

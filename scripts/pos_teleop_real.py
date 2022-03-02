@@ -46,6 +46,10 @@ class PosTeleopNode():
         # Init publishers
         self.cmd_pub = rospy.Publisher('/zeus_arm/cmd_vel', Command, queue_size=10)
         self.calib_pub = rospy.Publisher('/zeus_arm/calib_cmd', Int16, queue_size=10)
+        self.State_controller_joint = rospy('/zeus_arm/status/ctrl_joint_nb', Int16 queue_size=10)
+
+        # State publisher rate (in Hz)
+        self.rate = rospy.Rate(2) #2 Hz
 
         # Init command loop 
         rospy.Timer(rospy.Duration(1.0/50), self.send_cmd_callback)
@@ -276,12 +280,17 @@ class PosTeleopNode():
         self.cmd.mode = self.ctrl_mode
         self.send_cmd()
 
+    def publish_states(self):
+        '''Publishes all the state for the controller'''
+        while not rospy.is_shutdown():
+            self.State_controller_joint.publish(self.curr_joint)
+            self.rate.sleep()
 
 
 if __name__ == '__main__':
     try:
         node = PosTeleopNode()
-        rospy.spin()
+        node.publish_states()
     except rospy.ROSInterruptException:
         pass
 

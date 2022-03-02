@@ -1,3 +1,4 @@
+<?xml version='1.0'?>
 <launch>
   <node name="arm-cam" pkg="usb_cam" type="usb_cam_node" output="screen" >
     <param name="video_device" value="/dev/video2" />
@@ -21,5 +22,6 @@
     <param name="io_method" value="mmap"/>
   </node>
 
+  <node name = "arm_rqt" pkg = "rqt_gui" type = "rqt_gui" respawn = "false" output = "screen" args = "--perspective-file $(find zeus_arm)/config/zeus_arm_gui.perspective"/>  
 
 </launch>

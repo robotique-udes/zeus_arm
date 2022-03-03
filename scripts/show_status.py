@@ -2,9 +2,8 @@
 
 # -*- coding: utf-8 -*-
 
-# Created on January 27 2021
-# @author: Simon Chamorro       simon.chamorro@usherbrooke.ca
-#          Santiago Moya        santiago.moya@usherbrooke.ca
+# Created on 3 march 2022
+# @author: Loic Boileau loic.boileau@usherbrooke.ca
 
 
 """

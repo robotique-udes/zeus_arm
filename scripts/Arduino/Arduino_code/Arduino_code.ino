@@ -18,33 +18,33 @@
 
 /********************** Constants **********************/
 // J1
-#define dirPinm1 1
-#define pwmPinm1 2
+#define dirPinm1 12
+#define pwmPinm1 11
 
 
 // J2
-#define dirPinm2 3
-#define pwmPinm2 4
+#define dirPinm2 10
+#define pwmPinm2 9
 
 
 // J3
-#define dirPinm3 5
-#define pwmPinm3 6
+#define dirPinm3 8
+#define pwmPinm3 7
 
 
 // J4
-#define dirPinm4 7
-#define pwmPinm4 8
+#define dirPinm4 22
+#define pwmPinm4 5
 
 
 // J5
-#define dirPinm5 9
-#define pwmPinm5 10
+#define dirPinm5 4
+#define pwmPinm5 3
 
 
 // Gripper
-#define dirPinG 11
-#define pwmPinG 12
+#define dirPinG 13
+#define pwmPinG 2
 
 
 // Encoders addresses and pins
@@ -601,4 +601,5 @@ void loop() {
 
    // Process ROS Events
   nh.spinOnce();
+
 }

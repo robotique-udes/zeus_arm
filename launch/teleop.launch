@@ -9,6 +9,6 @@
         <param name="deadzone" value="0.1" />
     </node>
 
-	<!-- Status reader for teleop -->
-	<node name="status_reader" pkg="zeus_arm" type="show_status.py" output="screen" />
+	<!-- Teleop node -->
+	<node name="teleop_arm" pkg="zeus_arm" type="teleop_arm-loic-dev.py" output="screen" />
 </launch>

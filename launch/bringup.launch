@@ -1,16 +1,81 @@
 <?xml version='1.0'?>
 <launch>
-  <include file="$(find steve_control)/launch/multi_master.launch" />
+  <arg name="simulation" default="true"/>
+  <arg name="bypass_safety" default="false"/>
 
   <!-- Launch teleop script -->
-  <node name="teleop_node" pkg="zeus_arm" type="pos_teleop_real.py" output="screen" />
+  <!--
+  <include file="$(find zeus_arm)/launch/teleop.launch" />
+-->
+
+  <!-- speed multiplexer -->
+  <node name="twist_mux_arm" pkg="twist_mux" type="twist_mux" unless="$(arg bypass_safety)">
+    <rosparam command="load" file="$(find zeus_arm)/config/arm_mux_topics.yaml" />
+    <rosparam command="load" file="$(find zeus_arm)/config/arm_mux_locks.yaml" /> 
+    <remap from="cmd_vel" to="/zeus_arm/cmd_vel_mux_arm" />
+    <remap from="zero_twist" to="/zeus_arm/zero_twist" />
+  </node>
 
   <!-- Launch arm node -->
-  <node name="arm_node" pkg="zeus_arm" type="arm_node_real.py" output="screen" />
-
-  <!-- Launch rosserial_arduino node -->
-  <node name="arduino_serial" pkg="rosserial_arduino" type="serial_node.py">
-    <param name="port" value="/dev/ttyACM0" />
+  <node name="arm_node" pkg="zeus_arm" type="arm_node-loic-dev.py" output="screen">
+    <param name="simulation" value="$(arg simulation)" />
   </node>
+
+  <group unless="$(arg simulation)">
+    <!-- Launch multimaster -->
+    <include file="$(find steve_control)/launch/multi_master.launch" />
+
+    <!-- Launch rosserial_arduino node -->
+    <node name="arduino_serial" pkg="rosserial_arduino" type="serial_node.py">
+      <param name="port" value="/dev/ttyACM0" />
+    </node>
+  </group>
+
+  <!-- SIMULATION -->
+  <group if="$(arg simulation)">
+    <!-- Launch Gazebo with an empty world -->
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="gui" value="true" />
+        <arg name="use_sim_time" value="true"/>
+        <arg name="debug" value="false" />
+        <arg name="paused" value="true"/>
+    </include>
+
+    <!-- Load the description for the robot -->
+    <param name="robot_description" command="cat '$(find zeus_arm)/urdf/robot.urdf'" />
+
+    <!-- Spawn the robot in Gazebo -->
+    <node name="spawn_robot_urdf" pkg="gazebo_ros" type="spawn_model" output="screen"
+      args="-urdf -param robot_description -model zeus_arm -robot_namespace /zeus_arm 
+                    -x 0 
+                    -y 0 
+                    -z 0.5
+                    -J joint_1 0
+                    -J joint_2 0
+                    -J joint_3 0
+                    -J joint_4 0
+                    -J joint_5 0" />
+
+    <!-- Load controller configuration file -->
+    <rosparam file="$(find zeus_arm)/config/joint_velocity_controllers.yaml" command="load"/>
+
+    <!-- Load controller spawner from ROS control -->
+    <node  name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" 
+     ns="/zeus_arm" args="joint_1_velocity_controller 
+                          joint_2_velocity_controller 
+                          joint_3_velocity_controller 
+                          joint_4_velocity_controller  
+                          joint_state_controller"/>
+
+    <!-- Launch joint state publisher from ROS control -->
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false" output="screen">
+      <remap from="/joint_states" to ="/zeus_arm/joint_states" />
+    </node>
+
+    <!-- Initialize the robot and unpause gazebo -->
+    <arg name="start_delay_seconds" default="5"/>
+    <node name="init_robot" pkg="zeus_arm" type="init_robot.py" output="screen" respawn="false" launch-prefix="bash -c 'sleep $(arg start_delay_seconds); $0 $@'"/>
+
+  </group>
 
 </launch>

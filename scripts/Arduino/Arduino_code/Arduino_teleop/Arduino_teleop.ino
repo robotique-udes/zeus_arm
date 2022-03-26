@@ -92,7 +92,7 @@ void Motor::SendCmd()
   CheckForComm();
   
   //Keep only the sign
-  if (abs(vel_setpoint) > 1)
+  if (abs(vel_setpoint) > _max_speed)
     vel_setpoint = abs(vel_setpoint)/vel_setpoint; 
 
   //Scale the setpoint in -255 to 255

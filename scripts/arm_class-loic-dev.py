@@ -56,7 +56,11 @@ class RoboticArm() :
 		# Robot state
 		self.ref_cmd = np.zeros((6,1), dtype=np.float64)
 		self.joint_angles = np.zeros(4, dtype=np.float64)
-		self.lambda_gain = 0.1
+		self.lambda_gain = 0.1 # TO CHANGE: dynamic parameter
+
+
+	def write_joint_angles(self, angles):
+		self.joint_angles = angles
 
 
 	def dh2T(self, r , d , theta, alpha ):
@@ -197,19 +201,17 @@ class RoboticArm() :
 		])
 
 		return J 
-	
-	def write_joint_angles(self, angles):
-		self.joint_angles = angles
 		
 
-	def speed_controller(self, r_d):
+	def speed_controller(self, r_d, qv=None):
 		"""	
 		Returns speed command to send to actuator
 		INPUT
 		r_d 	: desired position of effector
+		qv		: secondary objective for joint poisition
 
 		OUTPUTS
-		cmd_to_motors  : position command for motors     (list 5x1)
+		q_dot  : speed command for motors     (list 5x1)
 		"""
 		q = self.joint_angles
 		J = self.jacobian_matrix(q)
@@ -222,7 +224,35 @@ class RoboticArm() :
 		q_dot = J_pseudo_inv*r_dot
 
 		# Add null space projection (qv is secondary-objective):
-		# q_dot = q_dot + (I * J_pseudo_inv*J)*qv 
+		if qv:
+			I = np.identity(len(qv))
+			# crop J second dimension
+			J = J[:, len(qv):]
+			# crop J_pseudo first dimension
+			J_pseudo_inv = J_pseudo_inv[len(qv):, :]
+			
+			q_dot = q_dot + (I * J_pseudo_inv*J)*qv 
+
+		return q_dot
+
+	def linear_jog_controller(self, rdot_d):
+		"""	
+		Returns speed command to send to actuator
+		INPUT
+		rdot_d 	: desired speed of effector in base frame
+
+		OUTPUTS
+		q_dot  : speed command for motors     (list 4x1)
+		"""
+		#Add change of reference if linear jog from effector frame
+
+		q = self.joint_angles
+		J = self.jacobian_matrix(q)
+
+		r, T = self.forward_kinematics(q)
+		J_pseudo_inv = np.dot(J.T, np.linalg.inv(np.dot(J.T,J)))
+
+		q_dot = J_pseudo_inv*rdot_d
 
 		return q_dot
 

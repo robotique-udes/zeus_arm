@@ -3,17 +3,12 @@
   <arg name="simulation" default="true"/>
   <arg name="bypass_safety" default="false"/>
 
-  <!-- Launch teleop script -->
-  <!--
-  <include file="$(find zeus_arm)/launch/teleop.launch" />
--->
 
   <!-- speed multiplexer -->
   <node name="twist_mux_arm" pkg="twist_mux" type="twist_mux" unless="$(arg bypass_safety)">
     <rosparam command="load" file="$(find zeus_arm)/config/arm_mux_topics.yaml" />
     <rosparam command="load" file="$(find zeus_arm)/config/arm_mux_locks.yaml" /> 
-    <remap from="cmd_vel" to="/zeus_arm/cmd_vel_mux_arm" />
-    <remap from="zero_twist" to="/zeus_arm/zero_twist" />
+    <remap from="cmd_vel_out" to="/zeus_arm/cmd_vel_mux" />
   </node>
 
   <!-- Launch arm node -->

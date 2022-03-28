@@ -9,11 +9,10 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
 )
 
-add_message_files(
-   FILES
-   Command.msg
-   Cmd_arm.msg
- )
+#add_message_files(
+#   FILES
+   
+# )
 
 
  

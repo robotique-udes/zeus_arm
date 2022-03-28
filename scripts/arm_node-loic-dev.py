@@ -18,11 +18,9 @@ ROS node containing robot arm instance
 import rospy
 import numpy as np
 from arm_class import RoboticArm
-from zeus_arm.msg import Command, Cmd_arm
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Float64
-from std_msgs.msg import Int16
-from std_msgs.msg import Bool
+from std_msgs.msg import Float64, Int16, Bool
+from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import JointState
 from ddynamic_reconfigure_python.ddynamic_reconfigure import DDynamicReconfigure
 
@@ -34,40 +32,36 @@ class ArmNode():
         '''
         if simulation:
             rospy.logwarn("Initialized node in simulation...")
+            # Watch out the joints number are inversed since the joint number are defined from the effector to the base
+            self.j6_pub_sim = rospy.Publisher('/zeus_arm/joint_1_velocity_controller/command', Float64, queue_size=10)
+            self.j5_pub_sim = rospy.Publisher('/zeus_arm/joint_2_velocity_controller/command', Float64, queue_size=10)
+            self.j4_pub_sim = rospy.Publisher('/zeus_arm/joint_3_velocity_controller/command', Float64, queue_size=10)
+            self.j3_pub_sim = rospy.Publisher('/zeus_arm/joint_4_velocity_controller/command', Float64, queue_size=10)
         else:
             rospy.loginfo("Initialized node")
+        self.simulation = simulation
 
         # Zero speed publisher #10Hz
-        rospy.loginfo("Setting zero speed publisher")
         self.zero_speed_pub = rospy.Publisher('/zeus_arm/zero_twist', Twist, queue_size=10)
         rospy.Timer(rospy.Duration(1.0/10),self.zero_speed)
+        rospy.loginfo("Setting zero speed publisher")
 
+        # Section for inverse kinematic
+        self.n_joints = 6
+        self.n_joints_sim = 4
         self.robot = RoboticArm()
-        self.cmd = np.zeros((6,1),dtype=np.float64)
-        self.last_cmd = np.zeros((6,1),dtype=np.float64)
-        self.ref_cmd = np.zeros((6,1),dtype=np.float64)
-        self.last_ref_cmd = np.zeros((6,1),dtype=np.float64)
-        self.ctrl_mode = 2
-        self.calibration_done = True;
-        self.last_change = 0.
-        self.last_cmd = np.zeros((6,1),dtype=np.float64)
+        self.calibration_done = True
+        
 
         # Init subscripers
-        rospy.Subscriber("/zeus_arm/cmd_vel_mux", Twist, self.set_cmd)
-        rospy.Subscriber("/zeus_arm/ctrl_mode", Int16, self.set_ctrl_mode)
+        rospy.Subscriber("/zeus_arm/cmd_vel_mux", Twist, self.send_cmd)
         rospy.Subscriber("/zeus_arm/joint_states", JointState ,self.update_joint_states)
         rospy.Subscriber("/zeus_arm/calibration_done", Bool ,self.update_calibration_status)
 
 
-        # Init publishers
-        self.j1_pub = rospy.Publisher('/zeus_arm/joint_1_velocity_controller/command', Float64, queue_size=10)
-        self.j2_pub = rospy.Publisher('/zeus_arm/joint_2_velocity_controller/command', Float64, queue_size=10)
-        self.j3_pub = rospy.Publisher('/zeus_arm/joint_3_velocity_controller/command', Float64, queue_size=10)
-        self.j4_pub = rospy.Publisher('/zeus_arm/joint_4_velocity_controller/command', Float64, queue_size=10)
-
-        # Control loop @40Hz
-        rospy.Timer(rospy.Duration(1.0/50),self.speed_controller)
-
+        # Init publishers std_msgs::Float64MultiArray
+        self.joint_cmd_pub = rospy.Publisher('/zeus_arm/joint_commands', Float64MultiArray, queue_size=10)
+        
 
         # Initialize configurable params
         # Create a DynamicDynamicReconfigure Server
@@ -77,7 +71,6 @@ class ArmNode():
         # Model Settings
         self.ddr.add_variable("lambda_gain", "float", 0.1, 0., 10.)
         
-
 
         # Start Server
         self.ddr.start(self.dynamic_reconfigure_callback)
@@ -113,65 +106,35 @@ class ArmNode():
         return config
 
 
-    def speed_controller(self,event):
-        """
-        Velocity control loop
-        """ 
-        if self.ctrl_mode == 2:
-            self.robot.ref_cmd = self.ref_cmd
-            self.cmd = self.robot.speed_controller()
-
-        self.send_cmd(self.cmd)
-
-
-
-    def send_cmd(self, cmd):
+    def send_cmd(self, twist):
         '''
-        Publishes commands
+        Publishes commands received from multiplexer, sends zeros if calibration is not done
+        The command received is in twist since its easier for the twist mux package
         '''
+        cmd = np.zeros((6), dtype=float)
+        cmd[5], cmd[4], cmd[3] = twist.linear.x, twist.linear.y, twist.linear.z
+        cmd[2], cmd[1], cmd[0] = twist.angular.x, twist.angular.y, twist.angular.z
 
-        if(self.calibration_done):
-            self.j1_pub.publish(cmd[0])
-            self.j2_pub.publish(cmd[1])
-            self.j3_pub.publish(cmd[2])
-            self.j4_pub.publish(cmd[3])
-
-
-    def set_cmd(self,msg):
-        '''
-        Callback from joystick
-        ----------
-        Parameters
-        ----------
-        msg: Command
-             Command structure containing control mode and command
-        '''
-
-        if self.ctrl_mode == 1:
-            self.cmd[0] = msg.linear.x
-            self.cmd[1] = msg.linear.y
-            self.cmd[2] = msg.linear.z
-            self.cmd[3] = msg.angular.x
-            self.cmd[4] = msg.angular.y
+        if not self.simulation:
+            if self.calibration_done:
+                self.joint_cmd_pub.publish(cmd)
+            else:
+                self.joint_cmd_pub.publish(np.zeros((self.n_joints)))
 
         else:
-            self.ref_cmd[0] = msg.linear.x
-            self.ref_cmd[1] = msg.linear.y
-            self.ref_cmd[2] = msg.linear.z
-            self.ref_cmd[3] = msg.angular.x
-            self.ref_cmd[4] = msg.angular.y
-            self.ref_cmd[5] = msg.angular.z
+            if self.calibration_done:
+                self.j6_pub_sim.publish(cmd[0])
+                self.j5_pub_sim.publish(cmd[1])
+                self.j4_pub_sim.publish(cmd[2])
+                self.j3_pub_sim.publish(cmd[3])
+            else:
+                self.j6_pub_sim.publish(Float64())
+                self.j5_pub_sim.publish(Float64())
+                self.j4_pub_sim.publish(Float64())
+                self.j3_pub_sim.publish(Float64())
 
-    def set_ctrl_mode(self,msg):
-        '''
-        Callback for control mode
-        ----------
-        Parameters
-        ----------
-        msg: Control mode
-             Int containing control mode 
-        '''
-        self.ctrl_mode = msg.data
+
+
 
     def update_calibration_status(self, msg):
         '''
@@ -196,20 +159,9 @@ class ArmNode():
         '''
 
         # Update joint angles
-        # self.robot.joint_angles = np.array(list(msg.position))
-        self.robot.joint_angles[1] = msg.position[1]
-        self.robot.joint_angles[0] = msg.position[0]
-        self.robot.joint_angles[2] = msg.position[2]
-        self.robot.joint_angles[3] = msg.position[3]
-        self.robot.joint_angles[4] = msg.position[4]
+        self.robot.joint_angles = np.array(msg.position)
         
-        # Update theta parameters
-        self.robot.t_dh[0] = 0.
-        self.robot.t_dh[1] = self.robot.joint_angles[0]
-        self.robot.t_dh[2] = self.robot.joint_angles[1] - np.pi/2
-        self.robot.t_dh[3] = self.robot.joint_angles[2] + np.pi/2
-        self.robot.t_dh[4] = self.robot.joint_angles[3] + np.pi/2
-        self.robot.t_dh[5] = 0.
+        
 
 if __name__ == '__main__':
     try:

@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-
 # -*- coding: utf-8 -*-
 
 # Created on Thu May 28 14:40:02 2020
-# @author: Santiago Moya		santiago.moya@usherbrooke.ca
+# @author: Loic Boileau loic.boileau@usherbrooke.ca
 
 
 """
@@ -17,48 +16,50 @@ Rover's arm class
 
 import rospy
 import numpy as np
+from numpy import cos as c, sin as s, pi
 from ddynamic_reconfigure_python.ddynamic_reconfigure import DDynamicReconfigure
 
 class RoboticArm() : 
 	"""
 	RoboticArm class
 	
-	5 DOF robot arm	
+	4 DOF robot arm	
 	"""
 	def __init__(self):
 		"""
 		Constructor method
 
 		"""
-		# Robot geometry
-		self.dof = 5
-		# self.l1 = 0.156175
-		# self.l2 = 0.265614
-		# self.l3 = 0.539307
-		# self.l4 = 0.460
-		# self.l5 = 0.131542
-		self.l1 = 0.13633
-		self.l2 = 0.266
-		self.l3 = 0.53931
-		self.l4 = 0.45365
-		self.l5 = 0.256142
+		## Robot geometry
+		self.dof = 4
+		
+		# Joint 6 (base rotation)
+		self.l1h = 0.13633 #Height of joint 5 with respect to joint 6
+		self.l1d = 0.266 #Length of joint 5 with respect to joint 6
 
+		# Joint 5 (shoulder)
+		self.l2 = 0.509 # m
 
+		# Joint 4 (elbow)
+		#Since elbow has an offset, the length is calculated with pythagore
+		#sqrt(h^2+d^2) => sqrt(0.02851^2+0.45365^2)
+		self.l3 = 0.4545  # m
 
-		# DH parameters are in order from world to end-effector        
-		# self.r_dh = np.array([0.,      0.266,       0.53925, 0.45135,  0.,         0.])
-		# self.d_dh = np.array([0.05651, 0.09766,     0.,      0.,      -0.00098,   -0.13705])
-		# self.t_dh = np.array([0.,      0.,          0.,      0.,       0.,         0.])
-		# self.a_dh = np.array([0.,      -np.pi/2,    0.,      0.,      -np.pi/2,    0.])
-		self.r_dh = np.array([0.,      0.266,       0.53925, 0.45365,  0.,         0.])
-		self.d_dh = np.array([0.05651, 0.09766,     0.,      0.,       0.,        -0.256142])
-		self.t_dh = np.array([0.,      0.,          0.,      0.,       0.,         0.])
-		self.a_dh = np.array([0.,      -np.pi/2,    0.,      0.,      -np.pi/2,    0.])
+		# Joint 3 (wrist)
+		self.l4 = 0.2046 # m
+
+		# Robot angle between joint 3 and 4 (phi)
+		#phi = atan(0.02851/0.45365)
+		self.phi = 0.06276 # rad
 
 		# Robot state
 		self.ref_cmd = np.zeros((6,1), dtype=np.float64)
-		self.joint_angles = np.zeros(5, dtype=np.float64)
-		self.lambda_gain = 0.1
+		self.joint_angles = np.zeros(4, dtype=np.float64)
+		self.lambda_gain = 0.1 # TO CHANGE: dynamic parameter
+
+
+	def write_joint_angles(self, angles):
+		self.joint_angles = angles
 
 
 	def dh2T(self, r , d , theta, alpha ):
@@ -75,30 +76,13 @@ class RoboticArm() :
 		T     : Transformation matrix   (float 4x4 (numpy array))
 				
 		"""
-		T = np.zeros((4,4), dtype=np.float64)
 
-		c = lambda ang : np.cos(ang)
-		s = lambda ang : np.sin(ang)
-		
-		T[0][0] = c(theta)
-		T[0][1] = -s(theta)*c(alpha)
-		T[0][2] = s(theta)*s(alpha)
-		T[0][3] = r*c(theta)
-		
-		T[1][0] = s(theta)
-		T[1][1] = c(theta)*c(alpha)
-		T[1][2] = -c(theta)*s(alpha)
-		T[1][3] = r*s(theta)
-		
-		T[2][0] = 0
-		T[2][1] = s(alpha)
-		T[2][2] = c(alpha)
-		T[2][3] = d
-		
-		T[3][0] = 0
-		T[3][1] = 0
-		T[3][2] = 0
-		T[3][3] = 1
+		T = np.array([
+			[c(theta), -s(theta)*c(alpha), s(theta)*s(alpha), r*c(theta)],
+			[s(theta), c(theta)*c(alpha), -c(theta)*s(alpha), r*s(theta)],
+			[0, s(alpha), c(alpha), d],
+			[0, 0, 0, 1]
+		])
 		
 		# Sets extremely small values to zero
 		for i in range(0,4):
@@ -123,57 +107,49 @@ class RoboticArm() :
 		WTT : Transformation matrix from tool to world      (float 4x4 (numpy array))
 	
 		"""
-		WTT = np.zeros((4,4), dtype=np.float64)
-		XTY = np.zeros((4,4), dtype=np.float64) 
-		INT = np.array([XTY])
-		
-		# Count the number of T matrices to calculate
-		parametersCount = len(r)
-		
-		# Create array for matrices
-		for y in range(0,parametersCount):
-			INT = np.append(INT,[XTY],0)
-			
-		# Calculate each T matrix
-		for x in range(0, parametersCount):
-			INT[x] = self.dh2T(r[x],d[x], theta[x], alpha[x])
-		
-		# First time must be done outside loop, if not WTT will remain a zeros matrix
-		WTT = INT[0]
-		for i in range(0,parametersCount-1):
-			WTT = WTT.dot(INT[i+1])    
+		WTT = np.identity(4)
+		for r, d, theta, alpha in zip(r, d, theta, alpha):
+			WTT = np.dot(WTT, self.dh2T(r, d, theta, alpha))   
 		
 		return WTT
-		
-	def forward_kinematics(self):
+
+	def forward_kinematics(self, q):
 		"""
-		Calculates end effector position
+
+		Parameters
+		----------
+		q : float 4x1
+			Joint space coordinates
+
+		Returns
+		-------
+		r : float 3x1 
+			Effector (x,y,z) position
+
+		"""
+		r = np.zeros((3,1))
 		
-		OUTPUTS
-		r : current robot task coordinates                          (list 3x1)
+		# Parametres DH trouve a partir du CAD du robot
+		DH_par = {
+			'd' : 		np.array([ self.l1h,	0,  			0, 			  			0]),
+			'r' : 		np.array([ self.l1d,  	self.l2,  		self.l3, 				self.l4]),
+			'theta' : 	np.array([ q[0], 		(pi/2)-q[1],	self.phi-q[2]-(pi/2),	-q[3]-self.phi]),
+			'alpha' : 	np.array([ (pi/2),		0, 				0,  			  		0])
+		}
 
-		"""   
-
-		# Extract transformation matrix
-		WTG = self.dhs2T(self.r_dh,self.d_dh,self.t_dh,self.a_dh)
-
-		theta_x = np.arctan2(WTG[2][1],WTG[2][2])
-		theta_y = np.arctan2(-WTG[2][0],np.sqrt(WTG[2][1]**2 + WTG[2][2]**2))
-		theta_z= np.arctan2(WTG[1][0],WTG[0][0]) 
+		WTT = self.dhs2T(
+			r = DH_par['r'],
+			d = DH_par['d'],
+			theta = DH_par['theta'],
+			alpha = DH_par['alpha']
+		)
 		
-		# Assemble the end effector position vector
-		r = np.zeros((6,1), dtype=np.float64)
-		r[0] = WTG[0][3]
-		r[1] = WTG[1][3]
-		r[2] = WTG[2][3]
-		r[3] = theta_x
-		r[4] = theta_y
-		r[5] = theta_z
-
-		return r,WTG
+		r = WTT[:3,-1]
+		
+		return r, WTT
 
 
-	def jacobian_matrix(self):
+	def jacobian_matrix(self, q):
 		"""
 		Calculates jacobian matrix 
 		
@@ -183,143 +159,102 @@ class RoboticArm() :
 		OUTPUTS
 		Jac : jacobian matrix (float 3x5)                                           
 		"""
+		l1h, l1d, l2, l3, l4, phi = self.l1h, self.l1d, self.l2, self.l3, self.l4, self.phi
 
-		J = np.zeros((6,self.dof), dtype=np.float64)
+		q1, q2, q3, q4 = q
 
-		c = lambda ang : np.cos(ang)
-		s = lambda ang : np.sin(ang)
+		# Used wolframalpha to calculate this (Copy paste it inside the math input)
+		# {{cos\(40)q_1\(41),0,sin\(40)q_1\(41),l_12*cos\(40)q_1\(41)},{sin\(40)q_1\(41),0,-cos\(40)q_1\(41),l_12*sin\(40)q_1\(41)},{0,1,0,l_11},{0,0,0,1}} . {{cos\(40)Divide[π,2]-q_2\(41),-sin\(40)Divide[π,2]-q_2\(41),0,l_2*cos\(40)Divide[π,2]-q_2\(41)},{sin\(40)Divide[π,2]-q_2\(41),cos\(40)Divide[π,2]-q_2\(41),0,l_2*sin\(40)Divide[π,2]-q_2\(41)},{0,0,1,0},{0,0,0,1}}.{{cos\(40)Divide[-π,2]-q_3+phi\(41),-sin\(40)Divide[-π,2]-q_3+phi\(41),0,l_3*cos\(40)Divide[-π,2]-q_3+phi\(41)},{sin\(40)Divide[-π,2]-q_3+phi\(41),cos\(40)Divide[-π,2]-q_3+phi\(41),0,l_3*sin\(40)Divide[-π,2]-q_3+phi\(41)},{0,0,1,0},{0,0,0,1}}.{{cos\(40)-q_4-phi\(41),-sin\(40)-q_4-phi\(41),0,l_4*cos\(40)-q_4-phi\(41)},{sin\(40)-q_4-phi\(41),cos\(40)-q_4-phi\(41),0,l_4*sin\(40)-q_4-phi\(41)},{0,0,1,0},{0,0,0,1}}
+		
+		## for X :
+		# simplified
+		# cos(q_1)(cos(-q_2-q_3+phi)(l_4cos(q_4+phi)+l_3)+(l_4sin(-q_2-q_3+phi)sin(q_4+phi)+l_2sin(q_2)+l_12))
 
-		l1 = self.l1
-		l2 = self.l2
-		l3 = self.l3
-		l4 = self.l4
-		l5 = self.l5
+		dx_dq1 = -s(q1)*(l3*c(-q2-q3+phi)+l2*s(q2)+l4*c(q2+q3+q4)+l1d)
+		dx_dq2 = c(q1)*(l3*s(-q2-q3+phi)-l4*s(q2+q3+q4)+l2*c(q2))
+		dx_dq3 = c(q1)*(l3*s(-q2-q3+phi)-l4*s(q2+q3+q4))
+		dx_dq4 = -l4*s(q2+q3+q4)*c(q1)
 
-		q = self.joint_angles
+		## for Y :
+		# simplified
+		# sin(q_1) (l_3 cos(-q_2 - q_3 + ϕ) + l_2 sin(q_2) + l_4 cos(q_2 + q_3 + q_4) + l_12)
 
-		J[0][0] = -(l2 + l3 * c(q[1]) + l4 *c((np.pi-q[1]) + q[2] + np.pi) + l5 * c((np.pi-q[1]) + q[2] + q[3] + np.pi)) * s(q[0])
-		J[0][1] = (-l3 * s(q[1]) - l4 * s((np.pi-q[1]) + q[2] + np.pi) - l5 * s((np.pi-q[1]) + q[2] + q[3] + np.pi)) * c(q[0])
-		J[0][2] = (-l4 * s((np.pi-q[1]) + q[2] + np.pi) - l5 * s((np.pi-q[1]) + q[2] + q[3] + np.pi)) * c(q[0])
-		J[0][3] = (-l5 * s((np.pi-q[1]) + q[2] + q[3] + np.pi)) * c(q[0])
-		J[0][4] = 0.
+		dy_dq1 = c(q1)*(l3*c(-q2-q3+phi)+l2*s(q2)+l4*c(q2+q3+q4)+l1d)
+		dy_dq2 = s(q1)*(l3*s(-q2-q3+phi)-l4*s(q2+q3+q4)+l2*c(q2))
+		dy_dq3 = s(q1)*(l3*s(-q2-q3+phi)-l4*s(q2+q3+q4))
+		dy_dq4 = -l4*s(q1)*s(q2+q3+q4)
 
-		J[1][0] = -(l2 + l3 * c(q[1]) + l4 *c((np.pi-q[1]) + q[2] + np.pi) + l5 * c((np.pi-q[1]) + q[2] + q[3] + np.pi)) * c(q[0])
-		J[1][1] = -(-l3 * s(q[1]) - l4 * s((np.pi-q[1]) + q[2] + np.pi) - l5 * s((np.pi-q[1]) + q[2] + q[3] + np.pi)) * s(q[0])
-		J[1][2] = -(-l4 * s((np.pi-q[1]) + q[2] + np.pi) - l5 * s((np.pi-q[1]) + q[2] + q[3] + np.pi)) * s(q[0])
-		J[1][3] = -(-l5 * s((np.pi-q[1]) + q[2] + q[3] + np.pi)) * s(q[0])
-		J[1][4] = 0.
+		## for Z :
+		# simplified
+		# l_3 sin(-q_2 - q_3 + ϕ) - l_4 sin(q_2 + q_3 + q_4) + l_2 cos(q_2) + l_11
+		
+		dz_dq1 = 0
+		dz_dq2 = -l3*c(-q2-q3+phi)-l2*s(q2)-l4*c(q2+q3+q4)
+		dz_dq3 = -l3*c(-q2-q3+phi)-l4*c(q2+q3+q4)
+		dz_dq4 = -l4*c(q2+q3+q4)
 
-		J[2][0] = 0.
-		J[2][1] = l3 * c(q[1]) + l4 * c((np.pi-q[1]) + q[2] + np.pi) + l5 * c((np.pi-q[1]) + q[2] + q[3] + np.pi)
-		J[2][2] = l4 * c((np.pi-q[1]) + q[2] + np.pi) + l5 * c((np.pi-q[1])+ q[2] + q[3] + np.pi)
-		J[2][3] = l5 * c((np.pi-q[1]) + q[2] + q[3] + np.pi)
-		J[2][4] = 0.
-
-		J[3][0] = 0.
-		J[3][1] = 0.
-		J[3][2] = 0.
-		J[3][3] = 0.
-		J[3][4] = 1.
-
-		J[4][0] = 0.
-		J[4][1] = 1.
-		J[4][2] = 1.
-		J[4][3] = 1.
-		J[4][4] = 0.
-
-		J[5][0] = 1.
-		J[5][1] = 0.
-		J[5][2] = 0.
-		J[5][3] = 0.
-		J[5][4] = 0.
-
-		# J[0][0] = -(l2 + l3 * s(q[1]) + l4 *c(q[1] + q[2] + np.pi) + l5 * c(q[1] + q[2] + q[3] + np.pi)) * s(q[0])
-		# J[0][1] = (l3 * c(q[1]) - l4 * s(q[1] + q[2] + np.pi) - l5 * s(q[1] + q[2] + q[3] + np.pi)) * c(q[0])
-		# J[0][2] = (-l4 * s(q[1] + q[2] + np.pi) - l5 * s(q[1] + q[2] + q[3] + np.pi)) * c(q[0])
-		# J[0][3] = (-l5 * s(q[1] + q[2] + q[3] + np.pi)) * c(q[0])
-		# J[0][4] = 0.
-
-		# J[1][0] = -(l2 + l3 * s(q[1]) + l4 *c(q[1] + q[2] + np.pi) + l5 * c(q[1] + q[2] + q[3] + np.pi)) * c(q[0])
-		# J[1][1] = -(l3 * c(q[1]) - l4 * s(q[1] + q[2] + np.pi) - l5 * s(q[1] + q[2] + q[3] + np.pi)) * s(q[0])
-		# J[1][2] = -(-l4 * s(q[1] + q[2] + np.pi) - l5 * s(q[1] + q[2] + q[3] + np.pi)) * s(q[0])
-		# J[1][3] = -(-l5 * s(q[1] + q[2] + q[3] + np.pi)) * s(q[0])
-		# J[1][4] = 0.
-
-		# J[2][0] = 0.
-		# J[2][1] = -l3 * s(q[1]) + l4 * c(q[1] + q[2] + np.pi) + l5 * c(q[1] + q[2] + q[3] + np.pi)
-		# J[2][2] = l4 * c(q[1] + q[2] + np.pi) + l5 * c(q[1]+ q[2] + q[3] + np.pi)
-		# J[2][3] = l5 * c(q[1] + q[2] + q[3] + np.pi)
-		# J[2][4] = 0.
-
-		# J[3][0] = 0.
-		# J[3][1] = 0.
-		# J[3][2] = 0.
-		# J[3][3] = 0.
-		# J[3][4] = 1.
-
-		# J[4][0] = 0.
-		# J[4][1] = 1.
-		# J[4][2] = 1.
-		# J[4][3] = 1.
-		# J[4][4] = 0.
-
-		# J[5][0] = 1.
-		# J[5][1] = 0.
-		# J[5][2] = 0.
-		# J[5][3] = 0.
-		# J[5][4] = 0.
+		J = np.array([
+			[dx_dq1, dx_dq2, dx_dq3, dx_dq4],
+			[dy_dq1, dy_dq2, dy_dq3, dy_dq4],
+			[dz_dq1, dz_dq2, dz_dq3, dz_dq4]
+		])
 
 		return J 
-			
 		
-	def get_joint_config(self):
-		"""
-		Returns robot joint configuration
-		
-		OUTPUTS
-		q  : current robot configuration                            (list 5x1)
 
-		"""
-		return self.joint_angles
-	
-
-	def get_effector_pos(self):
-		"""
-		Returns current end effector position
-		
-		OUTPUTS
-		end_effector  : current end effector coordinates     (list 3x1)
-
-		"""
-		return self.forward_kinematics(self.joint_angles) 
-
-
-	def speed_controller(self):
+	def speed_controller(self, r_d, qv=None):
 		"""	
 		Returns speed command to send to actuator
-		
+		INPUT
+		r_d 	: desired position of effector
+		qv		: secondary objective for joint poisition
+
 		OUTPUTS
-		cmd_to_motors  : position command for motors     (list 5x1)
+		q_dot  : speed command for motors     (list 5x1)
 		"""
-		q_dot = np.zeros((5,1), dtype = np.float64)
-		J = self.jacobian_matrix()
-		Jt = J.T
-		I = np.identity(5)
-		lambda2I = np.power(self.lambda_gain, 2) * I
+		q = self.joint_angles
+		J = self.jacobian_matrix(q)
 
-		#change referential
-		r , transf = self.forward_kinematics()
-		rot = np.zeros((3,3), dtype = np.float64)
-		rot = transf[0:3,0:3]
-		ref_world = np.zeros((6,1), dtype = np.float64)
-		ref_world[0:3] = np.dot(rot, self.ref_cmd[0:3])
-		ref_world[3] = self.ref_cmd[3]
-		ref_world[4] = self.ref_cmd[4]
-		ref_world[5] = -self.ref_cmd[5] 
+		r, T = self.forward_kinematics(q)
+		r_error = r_d - r
+		r_dot = self.lambda_gain * r_error
+		#print(r_dot)
+		J_pseudo_inv = np.matmul(J.T, np.linalg.inv(np.dot(J,J.T)))
 
-		#q_dot = np.dot(np.dot(np.linalg.inv(np.dot(Jt,J) + lambda2I), Jt), ref_world)
-		q_dot = np.dot(np.dot(np.linalg.inv(np.dot(Jt,J) + lambda2I), Jt), self.ref_cmd)
+		q_dot = np.matmul(J_pseudo_inv, r_dot)
 
-		return q_dot.flatten().tolist()
+		#print(q_dot)
+
+		# Add null space projection (qv is secondary-objective):
+		if qv:
+			I = np.identity(len(qv))
+			# crop J second dimension
+			J = J[:, len(qv):]
+			# crop J_pseudo first dimension
+			J_pseudo_inv = J_pseudo_inv[len(qv):, :]
+			
+			q_dot = q_dot + np.matmul(np.matmul(I , J_pseudo_inv*J), qv) 
+
+		return q_dot
+
+	def linear_jog_controller(self, rdot_d):
+		"""	
+		Returns speed command to send to actuator
+		INPUT
+		rdot_d 	: desired speed of effector in base frame
+
+		OUTPUTS
+		q_dot  : speed command for motors     (list 4x1)
+		"""
+		#Add change of reference if linear jog from effector frame
+
+		q = self.joint_angles
+		J = self.jacobian_matrix(q)
+
+		J_pseudo_inv = np.matmul(J.T, np.linalg.inv(np.dot(J,J.T)))
+
+		q_dot = np.matmul(J_pseudo_inv, rdot_d)
+
+		return q_dot
 
 		

@@ -10,5 +10,5 @@
     </node>
 
 	<!-- Teleop node -->
-	<node name="teleop_arm" pkg="zeus_arm" type="teleop_arm-loic-dev.py" output="screen" />
+	<node name="teleop_arm" pkg="zeus_arm" type="teleop_arm.py" output="screen" />
 </launch>

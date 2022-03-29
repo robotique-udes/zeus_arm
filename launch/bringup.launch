@@ -12,7 +12,7 @@
   </node>
 
   <!-- Launch arm node -->
-  <node name="arm_node" pkg="zeus_arm" type="arm_node-loic-dev.py" output="screen">
+  <node name="arm_node" pkg="zeus_arm" type="arm_node.py" output="screen">
     <param name="simulation" value="$(arg simulation)" />
   </node>
 

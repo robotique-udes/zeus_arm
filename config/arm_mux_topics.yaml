@@ -11,11 +11,16 @@ topics:
   topic   : /zeus_arm/zero_twist
   timeout : 0.5
   priority: 1
-# -
-#   name    : navigation
-#   topic   : nav_vel
-#   timeout : 0.5
-#   priority: 2
+-
+  name    : Reverse_kin
+  topic   : /zeus_arm/reverse_kin_twist
+  timeout : 0.3
+  priority: 2
+-
+  name    : Linear jog
+  topic   : /zeus_arm/linear_twist
+  timeout : 0.3
+  priority: 100
 -
   name    : Teleop
   topic   : /zeus_arm/teleop_cmd

@@ -1,0 +1,28 @@
+# Input topics handled/muxed.
+# For each topic:
+# - name    : name identifier to select the topic
+# - topic   : input topic of geometry_msgs::Twist type
+# - timeout : timeout in seconds to start discarding old messages, and use 0.0 speed instead
+# - priority: priority in the range [0, 255]; the higher the more priority over other topics
+
+topics:
+-
+  name    : Zero_speed
+  topic   : /zeus_arm/zero_twist
+  timeout : 0.5
+  priority: 1
+-
+  name    : Reverse_kin
+  topic   : /zeus_arm/reverse_kin_twist
+  timeout : 0.3
+  priority: 2
+-
+  name    : Linear jog
+  topic   : /zeus_arm/linear_twist
+  timeout : 0.3
+  priority: 100
+-
+  name    : Teleop
+  topic   : /zeus_arm/teleop_cmd
+  timeout : 0.2
+  priority: 255

@@ -37,7 +37,7 @@ class ArmNode():
             self.j2_pub_sim = rospy.Publisher('/zeus_arm/joint_2_velocity_controller/command', Float64, queue_size=10)
             self.j3_pub_sim = rospy.Publisher('/zeus_arm/joint_3_velocity_controller/command', Float64, queue_size=10)
             self.j4_pub_sim = rospy.Publisher('/zeus_arm/joint_4_velocity_controller/command', Float64, queue_size=10)
-            lambda_val = 1.
+            lambda_val = 0.5
         else:
             rospy.loginfo("Initialized node")
             lambda_val = 0.1

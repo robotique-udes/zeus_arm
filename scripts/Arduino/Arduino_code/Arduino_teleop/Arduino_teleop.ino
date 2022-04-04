@@ -17,6 +17,11 @@
 
 
 /********************** Constants **********************/
+#define U_RAW 1
+#define U_DEG 3
+#define U_RAD 4
+
+const int counts_per_revolution       = 6533;
 const unsigned long TIME_PERIOD_LOW   = 100;      //50 ms control loop
 const unsigned long TIME_PERIOD_COM   = 1000;    //1000 ms after that it sends 0
 unsigned long       time_last_low     = 0;
@@ -32,10 +37,12 @@ double MapCommand(double x, double in_max, double out_max)
 }
 
 /********************** Classes **********************/
+// MOTOR CLASS
 class Motor
 {
   public:
     Motor(int pin_pwm, int pin_dir, double max_speed, double min_speed_threshold);
+    void setup_calib(double calib_speed, int calib_dir, double limit_switch_pos);
 
     void UpdateLastComm();
     void CheckForComm();
@@ -104,6 +111,115 @@ void Motor::SendCmd()
 
   //Serial.println(pwm);
   _motor.setSpeed(pwm);
+}
+
+void setup_calib()
+{
+  
+}
+
+
+
+//ENCODER CLASS
+class Encoder
+{
+  public:
+    virtual double get();
+    virtual void set_zero();
+};
+
+// AMS encoder
+class Encoder_ams : public Encoder
+{
+  public:
+    Encoder_ams(int address, int unit);
+    double get();
+    void set_zero();
+
+  private:
+    AMS_AS5048B _encoder;
+    int _unit;
+};
+
+Encoder_ams::Encoder_ams(int address, int unit = U_RAD)
+  : _encoder(address), _unit(unit)
+{
+  _encoder.begin();
+}
+
+double Encoder_ams::get()
+{
+  // Must be call in loop or else moving average will not work
+  _encoder.updateMovingAvgExp();
+  return (_encoder.getMovingAvgExp(_unit));
+}
+
+void Encoder_ams::set_zero()
+{
+  _encoder.setZeroReg();
+}
+
+
+
+// Other encoder (polulu)
+class Encoder_oth : public Encoder
+{
+  public:
+    Encoder_oth(int channel_a, int channel_b, int counts_per_rev);
+    double get();
+    void set_zero();
+
+  private:
+    static Encoder_oth *instance;
+    static void modify_count_ISR();
+    void modify_count();
+    
+    float _ratio;
+    int _ch_a, _ch_b;
+    int _counter;
+};
+
+
+Encoder_oth::Encoder_oth(int channel_a, int channel_b, int counts_per_rev)
+  : _ratio((2*M_PI)/counts_per_rev), _ch_a(channel_a), _ch_b(channel_b)
+{
+  _counter = 0;
+  
+  pinMode(channel_a, INPUT_PULLUP);
+  pinMode(channel_b, INPUT_PULLUP);
+  
+  instance = this;
+
+  //Interrupt pin correct values 2, 3, 18, 19
+  attachInterrupt(digitalPinToInterrupt(channel_a), Encoder_oth::modify_count_ISR, RISING);
+}
+
+// Forward to non-static member function.
+void Encoder_oth::modify_count_ISR()
+{
+  instance->modify_count();
+}
+
+void Encoder_oth::modify_count()
+{
+  int b = digitalRead(_ch_b);
+  
+  if(b>0) _counter++;
+  else _counter--;
+}
+
+double Encoder_oth::get()
+{
+  double pos_rad = _counter * _ratio;
+  if (pos_rad >=M_PI)pos_rad -= 2*M_PI;
+  if (pos_rad >=M_PI)pos_rad += 2*M_PI;
+  
+  return pos_rad;
+}
+
+void Encoder_oth::set_zero()
+{
+  _counter = 0;
 }
 
 /********************** CALLBACKS **********************/

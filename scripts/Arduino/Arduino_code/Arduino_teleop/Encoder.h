@@ -1,0 +1,116 @@
+#include <ams_as5048b.h>
+
+//********** ENCODER CLASS *************
+
+class Encoder
+{
+  public:
+    virtual double get();
+    virtual void set_zero(double offset);
+  protected:
+    double _offset = 0.0;
+};
+
+
+// -------- AMS encoder ------
+
+class Encoder_ams : public Encoder
+{
+  public:
+    Encoder_ams(int address, int unit);
+    virtual double get();
+    virtual void set_zero(double offset);
+
+  private:
+    AMS_AS5048B _encoder;
+    int _unit;
+};
+
+Encoder_ams::Encoder_ams(int address, int unit = U_RAD)
+  : _encoder(address), _unit(unit)
+{
+  _encoder.begin();
+}
+
+double Encoder_ams::get()
+{
+  // Must be call in loop or else moving average will not work
+  _encoder.updateMovingAvgExp();
+  return _encoder.getMovingAvgExp(_unit) + _offset;
+}
+
+void Encoder_ams::set_zero(double offset)
+{
+  _offset = offset;
+  _encoder.setZeroReg();
+}
+
+
+
+// ------- Other encoder (polulu) --------
+
+class Encoder_oth : public Encoder
+{
+  public:
+    Encoder_oth(int channel_a, int channel_b, int counts_per_rev);
+    virtual double get();
+    virtual void set_zero(double offset);
+
+  private:
+    static Encoder_oth *instance;
+    
+    static void modify_count_ISR(); // function for interrupt (needs to be static)
+    void modify_count();
+    
+    float _ratio;
+    int _ch_a, _ch_b;
+    int _counter;
+};
+
+
+Encoder_oth::Encoder_oth(int channel_a, int channel_b, int counts_per_rev)
+  : _ratio((2*M_PI)/counts_per_rev), _ch_a(channel_a), _ch_b(channel_b)
+{
+  _counter = 0;
+  
+  pinMode(channel_a, INPUT_PULLUP);
+  pinMode(channel_b, INPUT_PULLUP);
+
+  // give pointer to instance so it can call function modify count
+  instance = this;
+
+  //Interrupt pin correct values 2, 3, 18, 19
+  attachInterrupt(digitalPinToInterrupt(channel_a), Encoder_oth::modify_count_ISR, RISING);
+}
+
+// Forward to non-static member function.
+void Encoder_oth::modify_count_ISR()
+{
+  if (instance)
+    instance->modify_count();
+}
+
+void Encoder_oth::modify_count()
+{
+  int b = digitalRead(_ch_b);
+  
+  if(b>0) _counter++;
+  else _counter--;
+}
+
+double Encoder_oth::get()
+{
+  double pos_rad = _counter * _ratio;
+  if (pos_rad >=M_PI)pos_rad -= 2*M_PI;
+  if (pos_rad >=M_PI)pos_rad += 2*M_PI;
+  
+  return pos_rad + _offset;
+}
+
+void Encoder_oth::set_zero(double offset)
+{
+  _offset = offset;
+  _counter = 0;
+}
+
+Encoder_oth* Encoder_oth::instance = NULL;

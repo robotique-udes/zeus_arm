@@ -67,7 +67,6 @@ class ArmNode():
         rospy.Subscriber("/zeus_arm/linear_cmd", Float64MultiArray, self.linear_cmd)
         rospy.Subscriber("/zeus_arm/reverse_kin_cmd", Float64MultiArray, self.reverse_kin_cmd)
         rospy.Subscriber("/zeus_arm/joint_positions", Float64MultiArray ,self.update_joint_states)
-        rospy.Subscriber("/zeus_arm/calibration_state", Int16 ,self.update_calibration_status)
 
         # -------- Publishers ----------
 
@@ -83,9 +82,7 @@ class ArmNode():
         self.zero_speed_pub = rospy.Publisher('/zeus_arm/zero_twist', Twist, queue_size=10)
 
         self.effector_pos_pub = rospy.Publisher('/zeus_arm/effector_pos', Float64MultiArray, queue_size=10)
-        # 0 all joints, 1 to 4 specifying the joint
-        self.calibration_cmd_pub = rospy.Publisher('/zeus_arm/calibration_cmd', Int16, queue_size=10)
-
+        
         # -------------------------------
 
         # Zero speed publisher #10Hz
@@ -204,12 +201,12 @@ class ArmNode():
         '''
         Send cmd to joint in Arduino
         '''
-        cmd = cmd.data
 
         if not self.simulation:
             self.joint_cmd_pub.publish(cmd)
 
         else:
+            cmd = cmd.data
             self.j1_pub_sim.publish(cmd[0])
             self.j2_pub_sim.publish(cmd[1])
             self.j3_pub_sim.publish(cmd[2])

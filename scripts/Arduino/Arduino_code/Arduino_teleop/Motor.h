@@ -14,8 +14,9 @@ class Motor
 {
   public:
     Motor(int pin_pwm, int pin_dir, double max_speed, double min_speed_threshold, unsigned int time_period_com);
-    void setup_calib(Encoder* enc, bool(*read_switch_func)(), double calib_speed, int calib_dir, double limit_switch_pos);
-    
+    void setup_calib(Encoder* enc, Limitswitch* swtch, double calib_speed, int calib_dir, double limit_switch_pos);
+
+    void Do_calib();
     void UpdateLastComm();
     void CheckForComm();
     void SendCmd();
@@ -38,7 +39,7 @@ class Motor
 
     // for calibration
     Encoder* _encoder;
-    bool(*_read_switch_func)();
+    Limitswitch* _switch;
     
     bool    _calibration_setup;
     int     _calib_dir;
@@ -69,11 +70,11 @@ Motor::Motor(int pin_pwm, int pin_dir, double max_speed, double min_speed_thresh
 
 }
 
-void Motor::setup_calib(Encoder* enc, bool(*read_switch_func)(), double calib_speed, int calib_dir, double limit_switch_pos)
+void Motor::setup_calib(Encoder* enc, Limitswitch* swtch, double calib_speed, int calib_dir, double limit_switch_pos)
 {
-  // get function pointer
+  // get object pointer
   _encoder = enc;
-  _read_switch_func = read_switch_func;
+  _switch = swtch;
 
   _calib_dir = (calib_dir > 0) - (calib_dir < 0);
   _calib_speed = calib_speed;
@@ -83,6 +84,25 @@ void Motor::setup_calib(Encoder* enc, bool(*read_switch_func)(), double calib_sp
   _calibration_setup = true;
 }
 
+void Motor::Do_calib()
+{
+  // do calib if conditions are met
+  if (_calibration_setup && start_calib)
+  {
+    if (_switch->get())
+    {
+      _encoder->set_zero(_limit_switch_pos);
+      vel_setpoint = 0.0;
+      start_calib = false;
+
+      Serial.println("Calib done");
+    }
+    else
+    {
+      vel_setpoint = _calib_dir*_calib_speed;
+    }
+  }
+}
 
 void Motor::UpdateLastComm()
 { 
@@ -116,21 +136,8 @@ void Motor::SendCmd()
 
 void Motor::motor_loop()
 { 
-  // do calib if conditions are met
-  if (_calibration_setup && start_calib)
-  {
-    if (_read_switch_func())
-    {
-      _encoder->set_zero(_limit_switch_pos);
-      vel_setpoint = 0.0;
-      start_calib = false;
-    }
-    else
-    {
-      vel_setpoint = _calib_dir*_calib_speed;
-    }
-  }
-
+  
+  Do_calib();
   CheckForComm();
   SendCmd();
 }

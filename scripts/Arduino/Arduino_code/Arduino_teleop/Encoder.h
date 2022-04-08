@@ -52,7 +52,7 @@ void Encoder_ams::set_zero(double offset)
 class Encoder_oth : public Encoder
 {
   public:
-    Encoder_oth(int channel_a, int channel_b, int counts_per_rev);
+    Encoder_oth(int channel_a, int channel_b, long counts_per_rev);
     virtual double get();
     virtual void set_zero(double offset);
 
@@ -68,7 +68,7 @@ class Encoder_oth : public Encoder
 };
 
 
-Encoder_oth::Encoder_oth(int channel_a, int channel_b, int counts_per_rev)
+Encoder_oth::Encoder_oth(int channel_a, int channel_b, long counts_per_rev)
   : _ratio((2*M_PI)/counts_per_rev), _ch_a(channel_a), _ch_b(channel_b)
 {
   _counter = 0;
@@ -100,11 +100,11 @@ void Encoder_oth::modify_count()
 
 double Encoder_oth::get()
 {
-  double pos_rad = _counter * _ratio;
-  if (pos_rad >=M_PI)pos_rad -= 2*M_PI;
-  if (pos_rad >=M_PI)pos_rad += 2*M_PI;
+  double pos_rad = (long)(_counter * _ratio) % (long)(2*M_PI);
+  //if (pos_rad >=M_PI)pos_rad -= 2*M_PI;
+  //if (pos_rad >=M_PI)pos_rad += 2*M_PI;
   
-  return pos_rad + _offset;
+  return (pos_rad + _offset);
 }
 
 void Encoder_oth::set_zero(double offset)
@@ -112,5 +112,8 @@ void Encoder_oth::set_zero(double offset)
   _offset = offset;
   _counter = 0;
 }
+
+// to explain why you need to do that go see here
+// https://forum.arduino.cc/t/using-an-interrupt-from-a-method-inside-a-class/486521
 
 Encoder_oth* Encoder_oth::instance = NULL;

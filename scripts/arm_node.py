@@ -19,7 +19,7 @@ import rospy
 import numpy as np
 from arm_class import RoboticArm
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Float64, Bool
+from std_msgs.msg import Float64, Bool, Int16
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import JointState
 from ddynamic_reconfigure_python.ddynamic_reconfigure import DDynamicReconfigure
@@ -58,15 +58,16 @@ class ArmNode():
         self.previous_joint_cmd = np.zeros(self.n_joints, dtype=float)
         
 
-        # Init subscripers
+        # -------- Subscribers ----------
+
         rospy.Subscriber("/zeus_arm/vel_watchdog_cmd", Float64MultiArray, self.send_cmd)
         # The callback for accel_watchdog is on a timer loop to be able to calculate the acceleration
         # this subscriber is just there to set new value of cmd_vel_mux asynchroniously
         rospy.Subscriber("/zeus_arm/cmd_vel_mux", Twist, self.accel_watchdog_sub)
         rospy.Subscriber("/zeus_arm/linear_cmd", Float64MultiArray, self.linear_cmd)
         rospy.Subscriber("/zeus_arm/reverse_kin_cmd", Float64MultiArray, self.reverse_kin_cmd)
-        rospy.Subscriber("/zeus_arm/joint_states", JointState ,self.update_joint_states)
-        rospy.Subscriber("/zeus_arm/calibration_done", Bool ,self.update_calibration_status)
+        rospy.Subscriber("/zeus_arm/joint_positions", Float64MultiArray ,self.update_joint_states)
+        rospy.Subscriber("/zeus_arm/calibration_state", Int16 ,self.update_calibration_status)
 
         # -------- Publishers ----------
 
@@ -82,6 +83,8 @@ class ArmNode():
         self.zero_speed_pub = rospy.Publisher('/zeus_arm/zero_twist', Twist, queue_size=10)
 
         self.effector_pos_pub = rospy.Publisher('/zeus_arm/effector_pos', Float64MultiArray, queue_size=10)
+        # 0 all joints, 1 to 4 specifying the joint
+        self.calibration_cmd_pub = rospy.Publisher('/zeus_arm/calibration_cmd', Int16, queue_size=10)
 
         # -------------------------------
 
@@ -237,7 +240,7 @@ class ArmNode():
         '''
 
         # Update joint angles
-        self.robot.joint_angles = np.array(msg.position)[:self.n_joints_reverse_kin]
+        self.robot.joint_angles = np.array(msg.data)[:self.n_joints_reverse_kin]
 
         # Publish effector pos
         r, _ = self.robot.forward_kinematics(self.robot.joint_angles)

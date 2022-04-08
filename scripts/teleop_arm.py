@@ -45,6 +45,8 @@ class TeleopNode():
                      1: "Teleop multiple joints at same time",
                      2: "Linear jog"}
         self.act_mode = 0
+        self.calib_status = -1 # -1: there is no calibration; 1 - 4 joints are getting calibrated right now
+        self.start_calib = False
 
 
         # Init publishers
@@ -53,7 +55,8 @@ class TeleopNode():
         self.calib_pub = rospy.Publisher('/zeus_arm/calib_cmd', Int16, queue_size=10)
 
         # Subscribe to joystick
-        self.joy_sub = rospy.Subscriber('/joy_arm', Joy, self.joy_callback)
+        rospy.Subscriber('/joy_arm', Joy, self.joy_callback)
+        rospy.Subscriber("/zeus_arm/calibration_state", Int16, self.update_calibration_status)
 
         # Initialize configurable params
         # Create a DynamicDynamicReconfigure Server
@@ -183,6 +186,12 @@ class TeleopNode():
         return cmd
 
 
+    def update_calibration_status(self, msg):
+        if msg.data != self.calib_status and msg.data > 0:
+            rospy.loginfo("Calibrating joint {" + str(msg.data) + "}...")
+            self.calib_status = msg.data
+
+
     def joy_callback(self, msg):
         '''
         Callback from joystick
@@ -220,42 +229,64 @@ class TeleopNode():
         if msg.buttons[5]:
 
             # Send calibration signal if share button is clicked
-            if msg.buttons[8]:
-                signal = Int16()
-                signal.data = 1
-                self.calib_pub.publish(signal)
-                rospy.loginfo("Sent calib signal")
+            if msg.buttons[8] or self.start_calib:
+                if not self.start_calib:
+                    self.start_calib = True
+                    rospy.loginfo("Entering calibration menu: \n->Choose with joints to calibrate"+ 
+                        "((Share) for all the joints, (X) for joint1, (Circle) for joint2, (Triangle) for joint3, (Square) for joint4)")
+                else:
+                    if msg.buttons.any():
+                        if msg.buttons[8]:
+                            self.calib_pub.publish(Int16(0))
+                            rospy.loginfo("Sending calibration command : 0")
+                        elif msg.buttons[0]:
+                            self.calib_pub.publish(Int16(1))
+                            rospy.loginfo("Sending calibration command : 1")
+                        elif msg.buttons[1]:
+                            self.calib_pub.publish(Int16(2))
+                            rospy.loginfo("Sending calibration command : 2")
+                        elif msg.buttons[2]:
+                            self.calib_pub.publish(Int16(3))
+                            rospy.loginfo("Sending calibration command : 3")
+                        elif msg.buttons[3]:
+                            self.calib_pub.publish(Int16(4))
+                            rospy.loginfo("Sending calibration command : 4")
+                        else:
+                            rospy.loginfo("Quitting calibration menu ...")
+                        self.start_calib = False
 
-            # Change mode if options button is clicked
-            if msg.buttons[9]:
-                self.change_mode()
+            else:
 
-            # Depends on which mode is activated
+                # Change mode if options button is clicked
+                if msg.buttons[9]:
+                    self.change_mode()
 
-            # Teleop 1 joint at a time (Default)
-            if self.act_mode == 0: 
-                if msg.buttons[0]:
-                    self.change_joint(1)
-                elif msg.buttons[2]:
-                    self.change_joint(-1)
+                # Depends on which mode is activated
 
-                cmd = self.send_cmd_teleop_simple(msg) 
-                self.cmd_pub.publish(cmd)
+                # Teleop 1 joint at a time (Default)
+                if self.act_mode == 0: 
+                    if msg.buttons[0]:
+                        self.change_joint(1)
+                    elif msg.buttons[2]:
+                        self.change_joint(-1)
 
-            # Teleop multiple joints at same time
-            elif self.act_mode == 1: 
-                cmd = self.send_cmd_teleop_multiple(msg)
-                self.cmd_pub.publish(cmd)
+                    cmd = self.send_cmd_teleop_simple(msg) 
+                    self.cmd_pub.publish(cmd)
 
-            # Linear jog
-            elif self.act_mode == 2:
-                # This mode sends a linear command directly to arm node instead of a twist
-                # It will be converted and then sent as a twist in twist mux
-                if msg.buttons[0] or msg.buttons[2]:
-                    self.change_axis()
+                # Teleop multiple joints at same time
+                elif self.act_mode == 1: 
+                    cmd = self.send_cmd_teleop_multiple(msg)
+                    self.cmd_pub.publish(cmd)
 
-                cmd = self.send_cmd_linear_jog(msg)
-                self.cmd_pub_linear.publish(cmd)
+                # Linear jog
+                elif self.act_mode == 2:
+                    # This mode sends a linear command directly to arm node instead of a twist
+                    # It will be converted and then sent as a twist in twist mux
+                    if msg.buttons[0] or msg.buttons[2]:
+                        self.change_axis()
+
+                    cmd = self.send_cmd_linear_jog(msg)
+                    self.cmd_pub_linear.publish(cmd)
             
 
 if __name__ == '__main__':

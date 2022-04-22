@@ -2,7 +2,9 @@
 /********************** Includes **********************/
 #include <ros.h>
 #include <math.h>
+#include <std_msgs/Float32MultiArray.h>
 #include <std_msgs/Float64MultiArray.h>
+#include <std_msgs/MultiArrayLayout.h>
 #include <std_msgs/Int16.h>
 #include <std_msgs/Bool.h>
 
@@ -40,7 +42,7 @@ bool calib_all_joints = false;
 bool in_calib = false;
 
 std_msgs::Int16 calib_value;
-std_msgs::Float64MultiArray joint_positions;
+std_msgs::Float32MultiArray joint_positions;
 
 ros::NodeHandle nh;
 ros::Publisher calib_state_pub("/zeus_arm/calibration_state", &calib_value);
@@ -92,6 +94,12 @@ void MessageCallback( const std_msgs::Float64MultiArray& cmd_msg)
     motor_arr[i].vel_setpoint = cmd_msg.data[i];
     motor_arr[i].UpdateLastComm();
   }
+ /*
+  Serial.print(cmd_msg.data[0]);
+  Serial.print(" | ");
+  Serial.print(cmd_msg.data[1]);
+  Serial.print(" | ");
+  Serial.println(cmd_msg.data[2]); */
 }
 
 void CalibCallback(const std_msgs::Int16 & calib_cmd)
@@ -169,6 +177,8 @@ void setup() {
   // Init ROS stuff
   nh.initNode();
   nh.subscribe(cmd_sub);
+  nh.advertise(calib_state_pub);
+  nh.advertise(pos_pub);
 
   // Setup encoders
   for (int i=0; i<N_ENCODERS; i++)
@@ -193,21 +203,19 @@ void loop() {
   
   // Low level loop
   if ((time_now - time_last_low) > TIME_PERIOD_LOW )
-  {
-    float data_arr[N_ENCODERS];
+  {   
     for (int i=0; i<N_ENCODERS; i++)
-    {
-      data_arr[i] = enc_arr[i]->get();
-    }   
-    joint_positions.data = data_arr;
+      joint_positions.data[i] = enc_arr[i]->get();
+    joint_positions.data_length = N_ENCODERS;
+
     pos_pub.publish(&joint_positions);
 
     // Send calib state
-    calib_state_pub.publish(&calib_value);
+    calib_state_pub.publish(&calib_value); 
     
-    
-    time_last_low = time_now; 
+    time_last_low = time_now;  
   }
+  
   // Process ROS Events
   nh.spinOnce();
   

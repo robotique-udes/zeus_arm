@@ -20,7 +20,7 @@ import numpy as np
 from arm_class import RoboticArm
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Float64, Bool, Int16
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float64MultiArray, Float32MultiArray
 from sensor_msgs.msg import JointState
 from ddynamic_reconfigure_python.ddynamic_reconfigure import DDynamicReconfigure
 
@@ -67,7 +67,7 @@ class ArmNode():
         rospy.Subscriber("/zeus_arm/cmd_vel_mux", Twist, self.accel_watchdog_sub)
         rospy.Subscriber("/zeus_arm/linear_cmd", Float64MultiArray, self.linear_cmd)
         rospy.Subscriber("/zeus_arm/reverse_kin_cmd", Float64MultiArray, self.reverse_kin_cmd)
-        rospy.Subscriber("/zeus_arm/joint_positions", Float64MultiArray ,self.update_joint_states)
+        rospy.Subscriber("/zeus_arm/joint_positions", Float32MultiArray ,self.update_joint_states)
 
         # -------- Publishers ----------
 
@@ -113,7 +113,7 @@ class ArmNode():
         rospy.Timer(rospy.Duration(1.0/self.accel_watchdog_freq), self.accel_watchdog)
         rospy.loginfo("Setting accel_watchdog publisher")
 
-        
+
 
     def zero_speed(self, event):
         self.zero_speed_pub.publish(Twist())
@@ -242,9 +242,14 @@ class ArmNode():
         msg: JointState
              States for all joints commind from simulation
         '''
+        if len(msg.data) > self.n_joints_reverse_kin:
+            data = np.array(msg.data)[:self.n_joints_reverse_kin]
+        else:
+            data = np.zeros(self.n_joints_reverse_kin)
+            data[:len(msg.data)] = np.array(msg.data)
 
         # Update joint angles
-        self.robot.joint_angles = np.array(msg.data)[:self.n_joints_reverse_kin]
+        self.robot.joint_angles = data
 
         # Publish effector pos
         r, _ = self.robot.forward_kinematics(self.robot.joint_angles)

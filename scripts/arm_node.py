@@ -108,7 +108,7 @@ class ArmNode():
 
         # Update internal variables values
         self.__dict__.update(self.config)
-        self.dynamic_reconfigure_callback(self.config, None)
+        #self.dynamic_reconfigure_callback(self.config, None)
 
         # Start Server
         self.ddr.start(self.dynamic_reconfigure_callback)
@@ -142,7 +142,7 @@ class ArmNode():
             if var_name == "lambda_gain":
                 # Update robot class
                 self.robot.lambda_gain = config[var_name]
-                print('****Updating lambda gains', str(config[var_name]))
+            print('****Updating ', var_name, ":", str(config[var_name]))
         return config
 
 

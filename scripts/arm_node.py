@@ -42,7 +42,7 @@ class ArmNode():
             rospy.loginfo("Initialized node")
             lambda_val = 0.1
             
-        self.max_accel = 1. # m/s2
+        max_accel = 1. # m/s2
         
         self.simulation = simulation
 
@@ -101,9 +101,14 @@ class ArmNode():
 
         # Add variables to ddr(name, description, default value, min, max, edit_method)        
         # Model Settings
-        self.ddr.add_variable("lambda_gain", "float", lambda_val, 0., 10.)
-        self.ddr.add_variable("max_accel", "float", max_accel, 0., 10.)
-        
+        # setting dict:
+        self.config = {"lambda_gain": lambda_val, "max_accel": max_accel}
+        self.ddr.add_variable("lambda_gain", "float", self.config["lambda_gain"], 0., 10.)
+        self.ddr.add_variable("max_accel", "float", self.config["max_accel"], 0., 10.)
+
+        # Update internal variables values
+        self.__dict__.update(self.config)
+        self.dynamic_reconfigure_callback(self.config, None)
 
         # Start Server
         self.ddr.start(self.dynamic_reconfigure_callback)

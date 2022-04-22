@@ -42,7 +42,7 @@ class ArmNode():
             rospy.loginfo("Initialized node")
             lambda_val = 0.1
             
-        max_accel = 1. # m/s2
+        max_accel = 3.5 # m/s2
         
         self.simulation = simulation
 
@@ -197,7 +197,7 @@ class ArmNode():
             if (a > self.max_accel) and (a > 0):
                 cmd[i] = (self.max_accel*dt) + self.previous_joint_cmd[i]
 
-            if (a < self.max_accel) and (a < 0):
+            if (a < -self.max_accel) and (a < 0):
                 cmd[i] = (-self.max_accel*dt) + self.previous_joint_cmd[i]
 
         self.accel_watchdog_cmd_pub.publish(Float64MultiArray(None, cmd))

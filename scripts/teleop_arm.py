@@ -65,12 +65,12 @@ class TeleopNode():
         # # Add variables to ddr(name, description, default value, min, max, edit_method)        
         # # Model Settings
         self.ddr.add_variable("linear_speed", "float", 0.3, 0, 10)
-        self.ddr.add_variable("J1_speed", "float", 1, 0, 10)
-        self.ddr.add_variable("J2_speed", "float", 1, 0, 10)
-        self.ddr.add_variable("J3_speed", "float", 1, 0, 10)
-        self.ddr.add_variable("J4_speed", "float", 1, 0, 10)
-        self.ddr.add_variable("J5_speed", "float", 1, 0, 10)
-        self.ddr.add_variable("J6_speed", "float", 1, 0, 10)
+        self.ddr.add_variable("J1_speed", "float", 0.2, 0, 1.)
+        self.ddr.add_variable("J2_speed", "float", 1., 0, 1.)
+        self.ddr.add_variable("J3_speed", "float", 1., 0, 1.)
+        self.ddr.add_variable("J4_speed", "float", 1., 0, 1.)
+        self.ddr.add_variable("J5_speed", "float", 1., 0, 1.)
+        self.ddr.add_variable("J6_speed", "float", 1., 0, 1.)
 
 
         # # Start Server
@@ -148,7 +148,7 @@ class TeleopNode():
     def send_cmd_teleop_simple(self, msg):
         # Create command structure
         cmd = Twist()
-        joy_cmd = msg.axes[1]
+        joy_cmd = msg.axes[4]
 
         # Fill command
         if self.curr_joint == 0:
@@ -233,7 +233,7 @@ class TeleopNode():
                 if not self.start_calib:
                     self.start_calib = True
                     rospy.loginfo("Entering calibration menu: \n->Choose with joints to calibrate"+ 
-                        "((Share) for all the joints, (X) for joint1, (Circle) for joint2, (Triangle) for joint3, (Square) for joint4)")
+                        "((Share) for all the joints, (A/X) for joint1, (B/Circle) for joint2, (X/Triangle) for joint3, (Y/Square) for joint4)")
                 else:
                     if msg.buttons.any():
                         if msg.buttons[8]:
@@ -267,7 +267,7 @@ class TeleopNode():
                 if self.act_mode == 0: 
                     if msg.buttons[0]:
                         self.change_joint(1)
-                    elif msg.buttons[2]:
+                    elif msg.buttons[3]:
                         self.change_joint(-1)
 
                     cmd = self.send_cmd_teleop_simple(msg) 

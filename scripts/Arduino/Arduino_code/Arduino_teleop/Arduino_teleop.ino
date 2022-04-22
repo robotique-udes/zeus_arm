@@ -94,12 +94,6 @@ void MessageCallback( const std_msgs::Float64MultiArray& cmd_msg)
     motor_arr[i].vel_setpoint = cmd_msg.data[i];
     motor_arr[i].UpdateLastComm();
   }
- /*
-  Serial.print(cmd_msg.data[0]);
-  Serial.print(" | ");
-  Serial.print(cmd_msg.data[1]);
-  Serial.print(" | ");
-  Serial.println(cmd_msg.data[2]); */
 }
 
 void CalibCallback(const std_msgs::Int16 & calib_cmd)

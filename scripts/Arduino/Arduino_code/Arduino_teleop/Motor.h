@@ -4,7 +4,9 @@
 double MapCommand(double x, double in_max, double out_max)
 {
   if (x > in_max)
-    x = in_max;    
+    x = in_max; 
+  if (x < -in_max)
+    x = -in_max;
   return (x/abs(in_max))*abs(out_max);
 }
 

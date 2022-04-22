@@ -42,7 +42,7 @@ class ArmNode():
             rospy.loginfo("Initialized node")
             lambda_val = 0.1
             
-        max_accel = 1. # m/s2
+        self.max_accel = 1. # m/s2
         
         self.simulation = simulation
 

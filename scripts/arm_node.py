@@ -83,16 +83,6 @@ class ArmNode():
         self.zero_speed_pub = rospy.Publisher('/zeus_arm/zero_twist', Twist, queue_size=10)
 
         self.effector_pos_pub = rospy.Publisher('/zeus_arm/effector_pos', Float64MultiArray, queue_size=10)
-        
-        # -------------------------------
-
-        # Zero speed publisher #10Hz
-        rospy.Timer(rospy.Duration(1.0/self.zero_speed_freq), self.zero_speed)
-        rospy.loginfo("Setting zero_speed publisher")
-
-        # Joint command to arduino #10Hz
-        rospy.Timer(rospy.Duration(1.0/self.accel_watchdog_freq), self.accel_watchdog)
-        rospy.loginfo("Setting accel_watchdog publisher")
 
 
         # ------ Initialize configurable params -------
@@ -108,11 +98,22 @@ class ArmNode():
 
         # Update internal variables values
         self.__dict__.update(self.config)
-        #self.dynamic_reconfigure_callback(self.config, None)
 
         # Start Server
         self.ddr.start(self.dynamic_reconfigure_callback)
         rospy.sleep(1)
+
+
+        # ------------- Publishers ------------------
+        # Zero speed publisher #10Hz
+        rospy.Timer(rospy.Duration(1.0/self.zero_speed_freq), self.zero_speed)
+        rospy.loginfo("Setting zero_speed publisher")
+
+        # Joint command to arduino #10Hz
+        rospy.Timer(rospy.Duration(1.0/self.accel_watchdog_freq), self.accel_watchdog)
+        rospy.loginfo("Setting accel_watchdog publisher")
+
+        
 
     def zero_speed(self, event):
         self.zero_speed_pub.publish(Twist())

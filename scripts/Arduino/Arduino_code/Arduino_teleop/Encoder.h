@@ -5,6 +5,9 @@
 class Encoder
 {
   public:
+    virtual void setup_enc();
+    virtual void encoder_loop();
+    
     virtual double get();
     virtual void set_zero(double offset);
   protected:
@@ -17,25 +20,41 @@ class Encoder
 class Encoder_ams : public Encoder
 {
   public:
-    Encoder_ams(int address, int unit);
+    Encoder_ams(int address, int frequence_update, int unit);
+    virtual void setup_enc();
+    virtual void encoder_loop();
+    
     virtual double get();
     virtual void set_zero(double offset);
 
   private:
     AMS_AS5048B _encoder;
     int _unit;
+    long _time_last_update;
+    int _freq_update;
 };
 
-Encoder_ams::Encoder_ams(int address, int unit = U_RAD)
-  : _encoder(address), _unit(unit)
+Encoder_ams::Encoder_ams(int address, int frequence_update, int unit = U_RAD)
+  : _encoder(address), _unit(unit), _time_last_update(millis()), _freq_update(frequence_update){}
+
+void Encoder_ams::setup_enc()
 {
   _encoder.begin();
+  //this->set_zero(0);
+}
+
+void Encoder_ams::encoder_loop()
+{
+  // Must be call in loop or else moving average will not work
+  if (millis() - _time_last_update > _freq_update)
+  {
+    _encoder.updateMovingAvgExp();
+    _time_last_update = millis();
+  }
 }
 
 double Encoder_ams::get()
 {
-  // Must be call in loop or else moving average will not work
-  _encoder.updateMovingAvgExp();
   return _encoder.getMovingAvgExp(_unit) + _offset;
 }
 
@@ -53,6 +72,9 @@ class Encoder_oth : public Encoder
 {
   public:
     Encoder_oth(int channel_a, int channel_b, long counts_per_rev);
+    virtual void setup_enc(){}
+    virtual void encoder_loop(){}
+    
     virtual double get();
     virtual void set_zero(double offset);
 
@@ -100,7 +122,7 @@ void Encoder_oth::modify_count()
 
 double Encoder_oth::get()
 {
-  double pos_rad = (long)(_counter * _ratio) % (long)(2*M_PI);
+  double pos_rad = fmod((_counter * _ratio),(2*M_PI));
   //if (pos_rad >=M_PI)pos_rad -= 2*M_PI;
   //if (pos_rad >=M_PI)pos_rad += 2*M_PI;
   

@@ -26,10 +26,11 @@
 #define U_RAD 4
 
 #define N_MOTORS 6
-#define N_ENCODERS 4
+#define N_ENCODERS 3 //4.. to be changed
+#define N_LIMITSWITCH 5
 
 const int counts_per_revolution       = 6533;
-const unsigned long TIME_PERIOD_LOW   = 100;      // 10 ms publishing rate loop
+const unsigned long TIME_PERIOD_LOW   = 100;      // 100 ms publishing rate loop
 const unsigned long TIME_PERIOD_COM   = 1000;    //1000 ms after that it sends 0
 unsigned long       time_last_low     = 0;
 unsigned long       time_now          = 0;
@@ -48,17 +49,18 @@ ros::Publisher pos_pub("/zeus_arm/joint_positions", &joint_positions);
 // Create encoder object :
 Encoder* enc_arr[N_ENCODERS] = {
     new Encoder_oth(19, 18, counts_per_revolution*2), //Dont forget the ratio from motor to base
-    new Encoder_ams(0x40, U_RAD),
-    new Encoder_ams(0x41, U_RAD),
-    new Encoder_ams(0x42, U_RAD)
+    new Encoder_ams(0x40, 50, U_RAD),// J4
+    new Encoder_ams(0x41, 50, U_RAD), // J2
+    //new Encoder_ams(0x42, 50, U_RAD) //J3
 };
 
 // Create limitswitch object 
-Limitswitch* switch_arr[N_ENCODERS] = {
-    new Limitswitch(23, false),
-    new Limitswitch(24, false),
-    new Limitswitch(25, false),
-    new Limitswitch(26, false)
+Limitswitch* switch_arr[N_LIMITSWITCH] = {
+    new Limitswitch(30, false), //joint1
+    new Limitswitch(31, true), //joint2
+    new Limitswitch(32, true), //joint3
+    new Limitswitch(33, true), //joint4 up
+    new Limitswitch(34, true) //joint4 down
 };
 
 // Create motor object : 
@@ -73,7 +75,14 @@ Motor motor_arr[N_MOTORS] = {
     Motor(3, 4, 0.5, 0.1, TIME_PERIOD_COM), //J5
     Motor(2, 13, 1, 0.1, TIME_PERIOD_COM) //J6
 };
-        
+
+// Motor calibration setup
+// void Motor::setup_calib(Encoder* enc, Limitswitch* swtch, double calib_speed, 
+// int calib_dir, double limit_switch_pos)
+void setup_motor_calib()
+{
+  motor_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.10, -1, 0);
+}
 
 /********************** CALLBACKS **********************/
 void MessageCallback( const std_msgs::Float64MultiArray& cmd_msg)
@@ -93,6 +102,20 @@ void CalibCallback(const std_msgs::Int16 & calib_cmd)
 // ROS subscribers
 ros::Subscriber<std_msgs::Float64MultiArray> cmd_sub("/zeus_arm/joint_commands", &MessageCallback );
 ros::Subscriber<std_msgs::Int16> calib_sub("/zeus_arm/calib_cmd", &CalibCallback );
+
+
+// Loops
+void Encoder_loop()
+{
+  for (int i=0; i<N_ENCODERS; i++)
+    enc_arr[i]->encoder_loop();
+}
+
+void Motor_loop()
+{
+  for (int i=0; i<N_MOTORS; i++)
+    motor_arr[i].motor_loop();
+}
 
 
 void Calib_loop()
@@ -146,6 +169,13 @@ void setup() {
   // Init ROS stuff
   nh.initNode();
   nh.subscribe(cmd_sub);
+
+  // Setup encoders
+  for (int i=0; i<N_ENCODERS; i++)
+    enc_arr[i]->setup_enc();
+
+  // Setup motor calib
+  
   
 }
 
@@ -155,11 +185,11 @@ void loop() {
   // Calib loop
   Calib_loop();
 
+  // Encoder loop
+  Encoder_loop();
+
   // Motor loop
-  for (int i=0; i<N_MOTORS; i++)
-  {
-    motor_arr[i].motor_loop();
-  }
+  Motor_loop();
   
   // Low level loop
   if ((time_now - time_last_low) > TIME_PERIOD_LOW )
@@ -168,7 +198,7 @@ void loop() {
     for (int i=0; i<N_ENCODERS; i++)
     {
       data_arr[i] = enc_arr[i]->get();
-    }
+    }   
     joint_positions.data = data_arr;
     pos_pub.publish(&joint_positions);
 

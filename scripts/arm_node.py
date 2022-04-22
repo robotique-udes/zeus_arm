@@ -41,7 +41,8 @@ class ArmNode():
         else:
             rospy.loginfo("Initialized node")
             lambda_val = 0.1
-            max_accel = 1. # m/s2
+            
+        max_accel = 1. # m/s2
         
         self.simulation = simulation
 
@@ -101,7 +102,7 @@ class ArmNode():
         # Add variables to ddr(name, description, default value, min, max, edit_method)        
         # Model Settings
         self.ddr.add_variable("lambda_gain", "float", lambda_val, 0., 10.)
-        self.ddr.add_variable("max_accel", "float", lambda_val, 0., 10.)
+        self.ddr.add_variable("max_accel", "float", max_accel, 0., 10.)
         
 
         # Start Server

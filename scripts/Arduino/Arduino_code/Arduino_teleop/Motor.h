@@ -15,17 +15,19 @@ class Motor
   public:
     Motor(int pin_pwm, int pin_dir, double max_speed, double min_speed_threshold, unsigned int time_period_com);
     void setup_calib(Encoder* enc, Limitswitch* swtch, double calib_speed, int calib_dir, double limit_switch_pos);
-
-    void Do_calib();
+    
     void UpdateLastComm();
     void CheckForComm();
-    void SendCmd();
+    
     void motor_loop();
     double vel_setpoint;
 
     bool start_calib;
     
   private:
+    void SendCmd();
+    void DoCalib();
+  
     int     _pin_pwm;
     int     _pin_dir;
 
@@ -84,25 +86,6 @@ void Motor::setup_calib(Encoder* enc, Limitswitch* swtch, double calib_speed, in
   _calibration_setup = true;
 }
 
-void Motor::Do_calib()
-{
-  // do calib if conditions are met
-  if (_calibration_setup && start_calib)
-  {
-    if (_switch->get())
-    {
-      _encoder->set_zero(_limit_switch_pos);
-      vel_setpoint = 0.0;
-      start_calib = false;
-
-      Serial.println("Calib done");
-    }
-    else
-    {
-      vel_setpoint = _calib_dir*_calib_speed;
-    }
-  }
-}
 
 void Motor::UpdateLastComm()
 { 
@@ -133,11 +116,30 @@ void Motor::SendCmd()
   _motor.setSpeed(pwm);
 }
 
+void Motor::DoCalib()
+{
+  // do calib if conditions are met
+  if (_calibration_setup && start_calib)
+  {
+    if (_switch->get())
+    {
+      _encoder->set_zero(_limit_switch_pos);
+      vel_setpoint = 0.0;
+      start_calib = false;
+
+      Serial.println("Calib done");
+    }
+    else
+    {
+      vel_setpoint = _calib_dir*_calib_speed;
+    }
+  }
+}
 
 void Motor::motor_loop()
 { 
   
-  Do_calib();
+  DoCalib();
   CheckForComm();
   SendCmd();
 }

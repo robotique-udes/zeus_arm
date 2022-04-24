@@ -63,14 +63,14 @@ class TeleopNode():
         self.ddr = DDynamicReconfigure("zeus_arm")
 
         # # Add variables to ddr(name, description, default value, min, max, edit_method)        
-        # # Model Settings
-        self.ddr.add_variable("linear_speed", "float", 0.3, 0, 10)
-        self.ddr.add_variable("J1_speed", "float", 0.2, 0, 1.)
-        self.ddr.add_variable("J2_speed", "float", 1., 0, 1.)
-        self.ddr.add_variable("J3_speed", "float", 1., 0, 1.)
-        self.ddr.add_variable("J4_speed", "float", 1., 0, 1.)
-        self.ddr.add_variable("J5_speed", "float", 1., 0, 1.)
-        self.ddr.add_variable("J6_speed", "float", 1., 0, 1.)
+        # # Model Settings (ALL IN RAD/S)
+        self.ddr.add_variable("linear_speed", "float", 0.3, 0, np.pi/4)
+        self.ddr.add_variable("J1_speed", "float", 0.2, 0, np.pi/2)
+        self.ddr.add_variable("J2_speed", "float", 0.2, 0, np.pi/4) 
+        self.ddr.add_variable("J3_speed", "float", 0.2, 0, np.pi/4)
+        self.ddr.add_variable("J4_speed", "float", 0.2, 0, np.pi/4)
+        self.ddr.add_variable("J5_speed", "float", 1., 0, 1.) # opened loop -1 to 1
+        self.ddr.add_variable("J6_speed", "float", 1., 0, 1.) # opened loop -1 to 1
 
 
         # # Start Server
@@ -148,7 +148,7 @@ class TeleopNode():
     def send_cmd_teleop_simple(self, msg):
         # Create command structure
         cmd = Twist()
-        joy_cmd = msg.axes[4]
+        joy_cmd = msg.axes[1]
 
         # Fill command
         if self.curr_joint == 0:
@@ -188,7 +188,7 @@ class TeleopNode():
 
     def update_calibration_status(self, msg):
         if msg.data != self.calib_status and msg.data > 0:
-            rospy.loginfo("Calibrating joint {" + str(msg.data) + "}...")
+            rospy.loginfo("From Arduino... Calibrating joint {" + str(msg.data) + "}...")
             self.calib_status = msg.data
 
 
@@ -228,15 +228,18 @@ class TeleopNode():
         # Check dead man switch
         if msg.buttons[5]:
 
-            # Send calibration signal if share button is clicked
-            if msg.buttons[8] or self.start_calib:
+            # Send calibration signal if back/share button is clicked
+            if msg.buttons[6] or self.start_calib:
                 if not self.start_calib:
                     self.start_calib = True
                     rospy.loginfo("Entering calibration menu: \n->Choose with joints to calibrate"+ 
                         "((Share) for all the joints, (A/X) for joint1, (B/Circle) for joint2, (X/Triangle) for joint3, (Y/Square) for joint4)")
                 else:
-                    if msg.buttons.any():
-                        if msg.buttons[8]:
+                    # Remove deadmanswitch and share
+                    buttons = np.array(msg.buttons)
+                    buttons[5], buttons[6] = 0, 0
+                    if buttons.any():
+                        if msg.buttons[7]: 
                             self.calib_pub.publish(Int16(0))
                             rospy.loginfo("Sending calibration command : 0")
                         elif msg.buttons[0]:
@@ -258,7 +261,7 @@ class TeleopNode():
             else:
 
                 # Change mode if options button is clicked
-                if msg.buttons[9]:
+                if msg.buttons[7]:
                     self.change_mode()
 
                 # Depends on which mode is activated

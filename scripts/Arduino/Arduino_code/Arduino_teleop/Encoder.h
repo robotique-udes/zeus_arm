@@ -40,7 +40,7 @@ Encoder_ams::Encoder_ams(int address, int frequence_update, int unit = U_RAD)
 void Encoder_ams::setup_enc()
 {
   _encoder.begin();
-  //this->set_zero(0);
+  this->set_zero(0);
 }
 
 void Encoder_ams::encoder_loop()
@@ -55,7 +55,12 @@ void Encoder_ams::encoder_loop()
 
 double Encoder_ams::get()
 {
-  return _encoder.getMovingAvgExp(_unit) + _offset;
+  double pos_rad = _encoder.getMovingAvgExp(_unit);
+  if (isnan(pos_rad))
+    pos_rad = 0.;
+  if (pos_rad > M_PI)
+    pos_rad = pos_rad - (2*M_PI);
+  return pos_rad + _offset;
 }
 
 void Encoder_ams::set_zero(double offset)

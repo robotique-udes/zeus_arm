@@ -67,7 +67,7 @@ class ArmNode():
         rospy.Subscriber("/zeus_arm/cmd_vel_mux", Twist, self.accel_watchdog_sub)
         rospy.Subscriber("/zeus_arm/linear_cmd", Float64MultiArray, self.linear_cmd)
         rospy.Subscriber("/zeus_arm/reverse_kin_cmd", Float64MultiArray, self.reverse_kin_cmd)
-        rospy.Subscriber("/zeus_arm/joint_positions", Float32MultiArray ,self.update_joint_states)
+        rospy.Subscriber("/zeus_arm/joint_state", JointState ,self.update_joint_states)
 
         # -------- Publishers ----------
 
@@ -242,11 +242,12 @@ class ArmNode():
         msg: JointState
              States for all joints commind from simulation
         '''
-        if len(msg.data) > self.n_joints_reverse_kin:
-            data = np.array(msg.data)[:self.n_joints_reverse_kin]
+        pos = np.array(msg.position)
+        if len(pos) > self.n_joints_reverse_kin:
+            data = pos[:self.n_joints_reverse_kin]
         else:
             data = np.zeros(self.n_joints_reverse_kin)
-            data[:len(msg.data)] = np.array(msg.data)
+            data[:len(pos)] = pos
 
         # Update joint angles
         self.robot.joint_angles = data

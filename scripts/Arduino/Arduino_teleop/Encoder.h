@@ -10,6 +10,8 @@ class Encoder
     
     virtual double get();
     virtual void set_zero(double offset);
+
+    int sign = 1;
   protected:
     double _offset = 0.0;
 };
@@ -20,7 +22,7 @@ class Encoder
 class Encoder_ams : public Encoder
 {
   public:
-    Encoder_ams(int address, int frequence_update, int unit);
+    Encoder_ams(int address, int frequence_update, int unit, bool switch_sign);
     virtual void setup_enc();
     virtual void encoder_loop();
     
@@ -34,8 +36,12 @@ class Encoder_ams : public Encoder
     int _freq_update;
 };
 
-Encoder_ams::Encoder_ams(int address, int frequence_update, int unit = U_RAD)
-  : _encoder(address), _unit(unit), _time_last_update(millis()), _freq_update(frequence_update){}
+Encoder_ams::Encoder_ams(int address, int frequence_update, int unit = U_RAD, bool switch_sign = false)
+  : _encoder(address), _unit(unit), _time_last_update(millis()), _freq_update(frequence_update)
+{
+  if (switch_sign)
+    sign = -1;
+}
 
 void Encoder_ams::setup_enc()
 {
@@ -55,12 +61,12 @@ void Encoder_ams::encoder_loop()
 
 double Encoder_ams::get()
 {
-  double pos_rad = _encoder.getMovingAvgExp(_unit);
+  double pos_rad = _encoder.getMovingAvgExp(_unit)*sign;
   if (isnan(pos_rad))
     pos_rad = 0.;
   if (pos_rad > M_PI)
     pos_rad = pos_rad - (2*M_PI);
-  return pos_rad + _offset;
+  return pos_rad*sign + _offset;
 }
 
 void Encoder_ams::set_zero(double offset)
@@ -76,7 +82,7 @@ void Encoder_ams::set_zero(double offset)
 class Encoder_oth : public Encoder
 {
   public:
-    Encoder_oth(int channel_a, int channel_b, long counts_per_rev);
+    Encoder_oth(int channel_a, int channel_b, long counts_per_rev, bool switch_sign);
     virtual void setup_enc(){}
     virtual void encoder_loop(){}
     
@@ -95,7 +101,7 @@ class Encoder_oth : public Encoder
 };
 
 
-Encoder_oth::Encoder_oth(int channel_a, int channel_b, long counts_per_rev)
+Encoder_oth::Encoder_oth(int channel_a, int channel_b, long counts_per_rev, bool switch_sign = false)
   : _ratio((2*M_PI)/counts_per_rev), _ch_a(channel_a), _ch_b(channel_b)
 {
   _counter = 0;
@@ -108,6 +114,9 @@ Encoder_oth::Encoder_oth(int channel_a, int channel_b, long counts_per_rev)
 
   //Interrupt pin correct values 2, 3, 18, 19
   attachInterrupt(digitalPinToInterrupt(channel_a), Encoder_oth::modify_count_ISR, RISING);
+
+  if (switch_sign)
+    sign = -1;
 }
 
 // Forward to non-static member function.
@@ -128,10 +137,8 @@ void Encoder_oth::modify_count()
 double Encoder_oth::get()
 {
   double pos_rad = fmod((_counter * _ratio),(2*M_PI));
-  //if (pos_rad >=M_PI)pos_rad -= 2*M_PI;
-  //if (pos_rad >=M_PI)pos_rad += 2*M_PI;
   
-  return (pos_rad + _offset);
+  return (pos_rad*sign + _offset);
 }
 
 void Encoder_oth::set_zero(double offset)

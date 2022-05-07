@@ -54,7 +54,7 @@ ros::Publisher joint_state_pub("/zeus_arm/joint_state", &joint_state);
 
 // Create encoder object :
 Encoder* enc_arr[N_ENCODERS] = {
-  new Encoder_oth(19, 18, counts_per_revolution * 2), //Dont forget the ratio from motor to base
+  new Encoder_oth(19, 18, counts_per_revolution * 2, true), //Dont forget the ratio from motor to base
   new Encoder_ams(0x41, 50, U_RAD),// J2
   new Encoder_ams(0x42, 50, U_RAD), // J3
   new Encoder_ams(0x40, 50, U_RAD) //J4
@@ -82,9 +82,10 @@ Motor motor_arr[N_MOTORS] = {
 // Motor calibration setup
 void setup_motor_calib()
 {
-  motor_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.06, -1, 2.16, 10000, M_PI/2, 100);
-  motor_arr[1].setup_calib(enc_arr[1], switch_arr[1], 0.10, -1, -0.07, 10000, M_PI/4);
-  motor_arr[2].setup_calib(enc_arr[1], switch_arr[1], 0.10, 1, 0, 10000, M_PI/4);
+  motor_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.06, -1, -2.16, 15000, M_PI/2, 10);
+  motor_arr[1].setup_calib(enc_arr[1], switch_arr[1], 0.40, -1, -0.07, 20000, M_PI/4, 10);
+  motor_arr[2].setup_calib(enc_arr[2], switch_arr[2], 0.40, 1, -0.90, 20000, M_PI/4, 10);
+  motor_arr[3].setup_calib(enc_arr[3], switch_arr[3], 0.75, -1, 0.85, 20000, M_PI/4, 10);
 }
 
 /********************** CALLBACKS **********************/
@@ -229,7 +230,5 @@ void loop() {
 
   // Process ROS Events
   nh.spinOnce();
-
-  //Serial.println("Not");
   
 }

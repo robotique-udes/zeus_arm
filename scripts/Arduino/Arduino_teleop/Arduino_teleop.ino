@@ -82,10 +82,10 @@ Motor motor_arr[N_MOTORS] = {
 // Motor calibration setup
 void setup_motor_calib()
 {
-  motor_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.06, -1, -2.16, 15000, M_PI/2, 10);
-  motor_arr[1].setup_calib(enc_arr[1], switch_arr[1], 0.40, -1, -0.07, 20000, M_PI/4, 10);
-  motor_arr[2].setup_calib(enc_arr[2], switch_arr[2], 0.40, 1, -0.90, 20000, M_PI/4, 10);
-  motor_arr[3].setup_calib(enc_arr[3], switch_arr[3], 0.75, -1, 0.85, 20000, M_PI/4, 10);
+  motor_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.04, -1, -2.16, 30000, M_PI/2, 10);
+  motor_arr[1].setup_calib(enc_arr[1], switch_arr[1], 0.40, -1, -0.07, 40000, M_PI/4, 10);
+  motor_arr[2].setup_calib(enc_arr[2], switch_arr[2], 0.65, 1, -0.90, 40000, M_PI/4, 10);
+  motor_arr[3].setup_calib(enc_arr[3], switch_arr[3], 0.75, -1, 0.85, 50000, M_PI/4, 10);
 }
 
 /********************** CALLBACKS **********************/

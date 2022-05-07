@@ -67,7 +67,7 @@ class TeleopNode():
         self.ddr.add_variable("linear_speed", "float", 0.3, 0, np.pi/4)
         self.ddr.add_variable("J1_speed", "float", 0.5, 0, np.pi/2)
         self.ddr.add_variable("J2_speed", "float", 0.5, 0, np.pi/2) 
-        self.ddr.add_variable("J3_speed", "float", 0.5, 0, np.pi/2)
+        self.ddr.add_variable("J3_speed", "float", 0.8, 0, np.pi/2)
         self.ddr.add_variable("J4_speed", "float", 0.5, 0, np.pi/2)
         self.ddr.add_variable("J5_speed", "float", 1., 0, 1.) # opened loop -1 to 1
         self.ddr.add_variable("J6_speed", "float", 1., 0, 1.) # opened loop -1 to 1

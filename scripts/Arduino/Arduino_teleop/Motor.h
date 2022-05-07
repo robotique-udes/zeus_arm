@@ -54,6 +54,7 @@ class Motor
     int     _sign = 1;
     bool    _calibration_setup = false;
     bool    _returning_home_cal = false;
+    long    _time_home = 0;
     int     _calib_counter = 0;
     
     int     _calib_dir;
@@ -181,7 +182,6 @@ void Motor::DoCalib()
   // do calib if conditions are met
   if (_calibration_setup && start_calib)
   { 
-    
     if (_switch->get())
     {
       //Debouncing
@@ -192,17 +192,18 @@ void Motor::DoCalib()
         vel_setpoint = 0.0;
 
         //Wait a tiny bit so that it doesnt require huge acceleration
-        if (_calib_counter > 1000)
-        {
-          start_calib = false;
-          
+        if (millis() - _time_home > 1000)
+        {        
           _returning_home_cal = true;
           _calib_counter = 0;
         }
       }
+      else
+        _time_home = millis();
     }
     else
     {
+      // if calib is too long stop it
       if (millis() - _calib_start_time > _in_calib_max_time)
         start_calib = false;
       else
@@ -210,13 +211,18 @@ void Motor::DoCalib()
         vel_setpoint = _calib_dir*_calib_speed;
         closed_loop_ctrl = false;
       }
+      _time_home = millis();
     }
 
     // returning to 0 pos
     if (_returning_home_cal)
     {
-      if (abs(_switch->get()) <= 0.015)
+      if ((_encoder->get() <= 0.005 && _limit_switch_pos >= 0.) || (_encoder->get() >= -0.005 && _limit_switch_pos < 0.))
+      {
+        vel_setpoint = 0.0;
+        start_calib = false;
         _returning_home_cal = false;
+      }
       else
       {
         vel_setpoint = _calib_dir*_calib_speed*-1.;

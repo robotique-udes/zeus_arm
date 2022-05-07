@@ -19,8 +19,8 @@ import rospy
 import numpy as np
 from arm_class import RoboticArm
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Float64, Bool
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float64, Bool, Int16
+from std_msgs.msg import Float64MultiArray, Float32MultiArray
 from sensor_msgs.msg import JointState
 from ddynamic_reconfigure_python.ddynamic_reconfigure import DDynamicReconfigure
 
@@ -41,28 +41,41 @@ class ArmNode():
         else:
             rospy.loginfo("Initialized node")
             lambda_val = 0.1
+            
+        max_accel = 3.5 # m/s2
         
         self.simulation = simulation
 
-        # Section for inverse kinematic
+        # --- reverse kinematic ---
         self.n_joints = 6
         self.n_joints_sim = 4
         self.n_joints_reverse_kin = 4
         self.robot = RoboticArm()
+
         self.calibration_done = True
+        self.zero_speed_freq = 10. # Hz
+        self.accel_watchdog_freq = 10. # Hz
+        self.accel_watchdog_cmd = np.zeros(self.n_joints, dtype=float)
+        self.previous_joint_cmd = np.zeros(self.n_joints, dtype=float)
         
 
-        # Init subscripers
-        rospy.Subscriber("/zeus_arm/cmd_vel_mux", Twist, self.send_cmd)
+        # -------- Subscribers ----------
+
+        rospy.Subscriber("/zeus_arm/vel_watchdog_cmd", Float64MultiArray, self.send_cmd)
+        # The callback for accel_watchdog is on a timer loop to be able to calculate the acceleration
+        # this subscriber is just there to set new value of cmd_vel_mux asynchroniously
+        rospy.Subscriber("/zeus_arm/cmd_vel_mux", Twist, self.accel_watchdog_sub)
         rospy.Subscriber("/zeus_arm/linear_cmd", Float64MultiArray, self.linear_cmd)
         rospy.Subscriber("/zeus_arm/reverse_kin_cmd", Float64MultiArray, self.reverse_kin_cmd)
-        rospy.Subscriber("/zeus_arm/joint_states", JointState ,self.update_joint_states)
-        rospy.Subscriber("/zeus_arm/calibration_done", Bool ,self.update_calibration_status)
+        rospy.Subscriber("/zeus_arm/joint_state", JointState ,self.update_joint_states)
 
         # -------- Publishers ----------
 
         # Init publishers that sends joint speed command to arduino
         self.joint_cmd_pub = rospy.Publisher('/zeus_arm/joint_commands', Float64MultiArray, queue_size=10)
+
+        # Init publisher that checks for a limit acceleration
+        self.accel_watchdog_cmd_pub = rospy.Publisher('/zeus_arm/vel_watchdog_cmd', Float64MultiArray, queue_size=10)
 
         # Publishers for the twist multiplexer
         self.revkin_cmd_pub = rospy.Publisher('/zeus_arm/reverse_kin_twist', Twist, queue_size=10)
@@ -71,23 +84,36 @@ class ArmNode():
 
         self.effector_pos_pub = rospy.Publisher('/zeus_arm/effector_pos', Float64MultiArray, queue_size=10)
 
-        # Zero speed publisher #10Hz
-        rospy.Timer(rospy.Duration(1.0/10),self.zero_speed)
-        rospy.loginfo("Setting zero speed publisher")
-        
 
-        # Initialize configurable params
+        # ------ Initialize configurable params -------
         # Create a DynamicDynamicReconfigure Server
         self.ddr = DDynamicReconfigure("zeus_arm")
 
         # Add variables to ddr(name, description, default value, min, max, edit_method)        
         # Model Settings
-        self.ddr.add_variable("lambda_gain", "float", lambda_val, 0., 10.)
-        
+        # setting dict:
+        self.config = {"lambda_gain": lambda_val, "max_accel": max_accel}
+        self.ddr.add_variable("lambda_gain", "float", self.config["lambda_gain"], 0., 10.)
+        self.ddr.add_variable("max_accel", "float", self.config["max_accel"], 0., 10.)
+
+        # Update internal variables values
+        self.__dict__.update(self.config)
 
         # Start Server
         self.ddr.start(self.dynamic_reconfigure_callback)
         rospy.sleep(1)
+
+
+        # ------------- Publishers ------------------
+        # Zero speed publisher #10Hz
+        rospy.Timer(rospy.Duration(1.0/self.zero_speed_freq), self.zero_speed)
+        rospy.loginfo("Setting zero_speed publisher")
+
+        # Joint command to arduino #10Hz
+        rospy.Timer(rospy.Duration(1.0/self.accel_watchdog_freq), self.accel_watchdog)
+        rospy.loginfo("Setting accel_watchdog publisher")
+
+
 
     def zero_speed(self, event):
         self.zero_speed_pub.publish(Twist())
@@ -114,9 +140,10 @@ class ArmNode():
         for var_name in var_names:
             # Update DDR server
             self.__dict__[var_name] = config[var_name]
-            # Update robot class
-            self.robot.lambda_gain = config[var_name]
-            print('****Updating lambda gains', str(config[var_name]))
+            if var_name == "lambda_gain":
+                # Update robot class
+                self.robot.lambda_gain = config[var_name]
+            print('****Updating ', var_name, ":", str(config[var_name]))
         return config
 
 
@@ -142,33 +169,56 @@ class ArmNode():
         self.revkin_cmd_pub.publish(cmd)
 
 
-
-    def send_cmd(self, twist):
+    def accel_watchdog_sub(self, twist):
         '''
-        Publishes commands received from multiplexer, sends zeros if calibration is not done
+        Writes new cmd_vel_mux value as an array. This is just to set new value, 
+        the accel_watchdog thread is the function below (accel_watchdog). If its not calibrated sends zeros.
         The command received is in twist since its easier for the twist mux package
         '''
-        cmd = np.zeros((6), dtype=float)
-        cmd[0], cmd[1], cmd[2] = twist.linear.x, twist.linear.y, twist.linear.z
-        cmd[3], cmd[4], cmd[5] = twist.angular.x, twist.angular.y, twist.angular.z
+        cmd = np.zeros(self.n_joints, dtype=float)
+        if self.calibration_done:
+            cmd[0], cmd[1], cmd[2] = twist.linear.x, twist.linear.y, twist.linear.z
+            cmd[3], cmd[4], cmd[5] = twist.angular.x, twist.angular.y, twist.angular.z
+
+        self.accel_watchdog_cmd = cmd
+
+
+    def accel_watchdog(self, event):
+        '''
+        Check if the desired velocity ask for an accepted acceleration
+        If not rewrites it for a velocity with max accel
+        '''
+        cmd = self.accel_watchdog_cmd
+        dt = (1/self.accel_watchdog_freq)
+
+        for i in range(len(cmd)):
+            a = (self.accel_watchdog_cmd[i] - self.previous_joint_cmd[i]) / dt
+
+            if (a > self.max_accel) and (a > 0):
+                cmd[i] = (self.max_accel*dt) + self.previous_joint_cmd[i]
+
+            if (a < -self.max_accel) and (a < 0):
+                cmd[i] = (-self.max_accel*dt) + self.previous_joint_cmd[i]
+
+        self.accel_watchdog_cmd_pub.publish(Float64MultiArray(None, cmd))
+        self.previous_joint_cmd = cmd
+
+
+    def send_cmd(self, cmd):
+        '''
+        Send cmd to joint in Arduino
+        '''
 
         if not self.simulation:
-            if self.calibration_done:
-                self.joint_cmd_pub.publish(cmd)
-            else:
-                self.joint_cmd_pub.publish(np.zeros((self.n_joints)))
+            self.joint_cmd_pub.publish(cmd)
 
         else:
-            if self.calibration_done:
-                self.j1_pub_sim.publish(cmd[0])
-                self.j2_pub_sim.publish(cmd[1])
-                self.j3_pub_sim.publish(cmd[2])
-                self.j4_pub_sim.publish(cmd[3])
-            else:
-                self.j1_pub_sim.publish(Float64())
-                self.j2_pub_sim.publish(Float64())
-                self.j3_pub_sim.publish(Float64())
-                self.j4_pub_sim.publish(Float64())
+            cmd = cmd.data
+            self.j1_pub_sim.publish(cmd[0])
+            self.j2_pub_sim.publish(cmd[1])
+            self.j3_pub_sim.publish(cmd[2])
+            self.j4_pub_sim.publish(cmd[3])
+        
 
 
     def update_calibration_status(self, msg):
@@ -192,9 +242,15 @@ class ArmNode():
         msg: JointState
              States for all joints commind from simulation
         '''
+        pos = np.array(msg.position)
+        if len(pos) > self.n_joints_reverse_kin:
+            data = pos[:self.n_joints_reverse_kin]
+        else:
+            data = np.zeros(self.n_joints_reverse_kin)
+            data[:len(pos)] = pos
 
         # Update joint angles
-        self.robot.joint_angles = np.array(msg.position)[:self.n_joints_reverse_kin]
+        self.robot.joint_angles = data
 
         # Publish effector pos
         r, _ = self.robot.forward_kinematics(self.robot.joint_angles)

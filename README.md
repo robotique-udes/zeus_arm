@@ -119,3 +119,9 @@ This folder has all the python and C/C++ (Arduino) files to run the robot (simul
 This folder has the URDF file used by gazebo to render the robot arm and its physics. It was exported using the onshape-to-robot open source package. For more details, visit : https://github.com/Rhoban/onshape-to-robot.
 
 
+## Arduino
+
+### From command line
+```
+arduino --upload ~/catkin_ws/src/zeus_arm/scripts/Arduino/Arduino_teleop/Arduino_teleop.ino --port /dev/ttyACM0
+```

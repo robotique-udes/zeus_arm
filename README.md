@@ -125,3 +125,5 @@ This folder has the URDF file used by gazebo to render the robot arm and its phy
 ```
 arduino --upload ~/catkin_ws/src/zeus_arm/scripts/Arduino/Arduino_teleop/Arduino_teleop.ino --port /dev/ttyACM0
 ```
+
+copier les librairies de arduino dans celle du jetson dans folder ~/Arduino/librairies

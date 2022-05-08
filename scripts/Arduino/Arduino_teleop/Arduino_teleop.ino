@@ -12,8 +12,6 @@
  * No need to include them since its only class specific objects
   #include "CytronMotorDriver.h"
   #include <ams_as5048b.h>
-  #include <Servo.h>
-  #include <digitalWriteFast.h>
 */
 
 #include "Encoder.h"
@@ -82,10 +80,17 @@ Motor motor_arr[N_MOTORS] = {
 // Motor calibration setup
 void setup_motor_calib()
 {
+  // Calibration
   motor_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.04, -1, -2.16, 30000, M_PI/2, 10);
   motor_arr[1].setup_calib(enc_arr[1], switch_arr[1], 0.40, -1, -0.07, 40000, M_PI/4, 10);
   motor_arr[2].setup_calib(enc_arr[2], switch_arr[2], 0.65, 1, -0.90, 40000, M_PI/4, 10);
   motor_arr[3].setup_calib(enc_arr[3], switch_arr[3], 0.75, -1, 0.85, 50000, M_PI/4, 10);
+
+  // Axlimits
+  motor_arr[1].set_ax_limit(switch_arr[1], -1);
+  motor_arr[2].set_ax_limit(switch_arr[2], 1);
+  motor_arr[3].set_ax_limit(switch_arr[3], -1);
+  motor_arr[4].set_ax_limit(switch_arr[4], 1);
 }
 
 /********************** CALLBACKS **********************/

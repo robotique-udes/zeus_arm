@@ -1,5 +1,7 @@
 #include "CytronMotorDriver.h"
 
+#define MAX_LIM 2
+
 /********************** Functions **********************/
 double MapCommand(double x, double in_max, double out_max)
 {
@@ -18,12 +20,18 @@ class Motor
     Motor(int pin_pwm, int pin_dir, double max_speed, double min_speed_threshold, unsigned int time_period_com, bool switch_sign);
     void setup_calib(Encoder* enc, Limitswitch* swtch, double calib_speed, int calib_dir, double limit_switch_pos, 
         unsigned int max_time_calib, float max_closedloop_vel, float kp, float kd, float ki);
-    
+
+    //Ax limit
+    void set_ax_limit(Limitswitch* swtch, int dir);
+
+    // Comm
     void UpdateLastComm();
     void CheckForComm();
-    
+
+    // Loop
     void motor_loop();
     //Goes from -1.0 to 1 if in opened-loop, else its in rad/s
+    
     double vel_setpoint = 0.0;
     double actual_vel = 0.0;
 
@@ -32,9 +40,11 @@ class Motor
     
     bool closed_loop_ctrl = false;
     
+    
   private:
     void SendCmd();
     void DoCalib();
+    void AxLimits();
   
     int     _pin_pwm;
     int     _pin_dir;
@@ -67,7 +77,16 @@ class Motor
     float _max_closedloop_vel;
     float _kp, _kd, _ki;
     float _ie, _previous_e;
-    unsigned long _previous_t;
+    unsigned long _previous_t; 
+
+    // Ax limit
+    struct ax_limit
+    {
+      Limitswitch* swtch;
+      int dir;
+    };
+    ax_limit _limits[MAX_LIM];
+    int _n_lim = 0;
     
 };
 
@@ -110,6 +129,27 @@ void Motor::setup_calib(Encoder* enc, Limitswitch* swtch, double calib_speed, in
   _kp = kp;
   _kd = kd;
   _ki = ki;
+}
+
+void Motor::set_ax_limit(Limitswitch* swtch, int dir)
+{
+  if (_n_lim < MAX_LIM)
+  {
+    _limits[_n_lim] = {swtch, dir};
+    _n_lim += 1;
+  }
+}
+
+void Motor::AxLimits()
+{
+  for (int i = 0; i<_n_lim; i++)
+  {
+    if (_limits[i].swtch->get())
+    {
+      if (vel_setpoint*_limits[i].dir > 0.0) //same sign
+        vel_setpoint = 0.0;
+    }
+  }
 }
 
 void Motor::UpdateLastComm()
@@ -234,7 +274,7 @@ void Motor::DoCalib()
 
 void Motor::motor_loop()
 { 
-  
+  AxLimits();
   DoCalib();
   CheckForComm();
   SendCmd();

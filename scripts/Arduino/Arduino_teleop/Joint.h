@@ -171,7 +171,7 @@ void Joint::CtrlCmd()
   }
 
   //If cmd is too small just send 0
-  if (abs(cmd) < _min_speed_threshold || abs(vel_setpoint) < _min_speed_threshold) 
+  if (abs(cmd) < _min_speed_threshold) 
     cmd = 0;
 
   _ctrl_cmd = cmd;

@@ -242,10 +242,12 @@ void Joint::DoCalib()
 void Joint::joint_loop()
 { 
   CtrlCmd();
+
+  //Serial.println(_ctrl_cmd);
   
   AxLimits();
   DoCalib();
   CheckForComm();
 
-  _motor->set_speed(_ctrl_cmd);
+  //_motor->set_speed(_ctrl_cmd);
 }

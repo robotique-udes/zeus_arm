@@ -95,7 +95,7 @@ Joint joint_arr[N_MOTORS] = {
 void setup_motor_calib()
 {
   // Calibration
-  joint_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.04, -1, -2.16, 30000, 1, 0.25, 0.05);
+  joint_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.04, -1, -2.16, 30000, 0.1, 0.025, 0.005);
   joint_arr[1].setup_calib(enc_arr[1], switch_arr[1], 0.40, -1, -0.07, 40000, 1, 0.25, 0.05);
   joint_arr[2].setup_calib(enc_arr[2], switch_arr[2], 0.65, 1, -0.90, 40000, 1, 0.25, 0.05);
   joint_arr[3].setup_calib(enc_arr[3], switch_arr[3], 0.75, -1, 0.85, 50000, 1, 0.25, 0.05);
@@ -141,7 +141,10 @@ void Encoder_loop()
 void Motor_loop()
 {
   for (int i = 0; i < N_MOTORS; i++){
+    joint_arr[i].vel_setpoint = -0.2;
+    joint_arr[i].closed_loop_ctrl = true;
     joint_arr[i].joint_loop();
+    break;
   }
 }
 

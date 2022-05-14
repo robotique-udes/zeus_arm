@@ -7,7 +7,7 @@
 class Joint
 {
   public:
-    Joint(Motor* motor, double max_speed, double min_speed_threshold, unsigned int time_period_com, bool switch_sign);
+    Joint(Motor* motor, double max_speed, double min_speed_threshold, unsigned int time_period_com);
     void setup_calib(Encoder* enc, Limitswitch* swtch, double calib_speed, int calib_dir, double limit_switch_pos, 
         unsigned int max_time_calib, float kp, float kd, float ki);
 
@@ -19,7 +19,7 @@ class Joint
     void CheckForComm();
 
     // Loop
-    void motor_loop();
+    void joint_loop();
     //Goes from -1.0 to 1 if in opened-loop, else its in rad/s
     
     double vel_setpoint = 0.0;
@@ -32,9 +32,12 @@ class Joint
     
     
   private:
-    void SendCmd();
+    void CtrlCmd();
     void DoCalib();
     void AxLimits();
+    void SendCmd();
+
+    double _ctrl_cmd;
   
     int     _pin_pwm;
     int     _pin_dir;
@@ -66,7 +69,6 @@ class Joint
     // for closed loop
     float _kp, _kd, _ki;
     double _pid_output;
-    unsigned long _t;
     PID _pid;
 
     // Ax limit
@@ -81,16 +83,13 @@ class Joint
 };
 
 
-Joint::Joint(Motor* motor, double max_speed, double min_speed_threshold, unsigned int time_period_com=1000, bool switch_sign=false)
+Joint::Joint(Motor* motor, double max_speed, double min_speed_threshold, unsigned int time_period_com=1000)
   : _motor(motor), _pid(&actual_vel, &_pid_output, &vel_setpoint, _kp, _ki, _kd, DIRECT)
 {   
   _max_speed = max_speed;
   _min_speed_threshold = min_speed_threshold;
 
   _time_period_com = time_period_com;
-
-  if (switch_sign)
-    _sign = -1;
 }
 
 void Joint::setup_calib(Encoder* enc, Limitswitch* swtch, double calib_speed, int calib_dir, double limit_switch_pos, 
@@ -114,7 +113,6 @@ void Joint::setup_calib(Encoder* enc, Limitswitch* swtch, double calib_speed, in
   
   //turn the PID on
   _pid.SetMode(AUTOMATIC);
-  _t = millis();
 }
 
 void Joint::set_ax_limit(Limitswitch* swtch, int dir)
@@ -132,8 +130,8 @@ void Joint::AxLimits()
   {
     if (_limits[i].swtch->get())
     {
-      if (vel_setpoint*_limits[i].dir > 0.0) //same sign
-        vel_setpoint = 0.0;
+      if (_ctrl_cmd*_limits[i].dir > 0.0) //same sign
+        _ctrl_cmd = 0.0;
     }
   }
 }
@@ -146,13 +144,12 @@ void Joint::UpdateLastComm()
 void Joint::CheckForComm()
 {
   if (millis() - _time_last_com > _time_period_com)
-    vel_setpoint = 0.0;
+    _ctrl_cmd = 0.0;
 }
 
-void Joint::SendCmd()
+void Joint::CtrlCmd()
 {
   double cmd = vel_setpoint;
-  
   // If in closed loop
   if (_calibration_setup && closed_loop_ctrl)
   {
@@ -163,23 +160,21 @@ void Joint::SendCmd()
        _pid.SetTunings(_kp*4, _ki*4, _kd*4);
 
     _pid.Compute();
-    cmd = (_pid_output * (millis()-_t)) + actual_vel;
-    _t = millis();
+    cmd = _pid_output + actual_vel;
   }
   
   // If in opened loop:
   else
-  {}
+  {
+    //Scale the setpoint from -1 to 1
+    cmd = MapCommand(cmd, _max_speed, 1.0);  
+  }
 
   //If cmd is too small just send 0
-  if (abs(cmd) < _min_speed_threshold) 
+  if (abs(cmd) < _min_speed_threshold || abs(vel_setpoint) < _min_speed_threshold) 
     cmd = 0;
 
-  //Scale the setpoint from -1 to 1
-  cmd = MapCommand(cmd, _max_speed, 1.0); 
-
-  // It has to be a normalized command (from -1. to 1.)
-  _motor->set_speed(cmd*_sign);
+  _ctrl_cmd = cmd;
 }
 
 void Joint::StartCalib()
@@ -200,7 +195,7 @@ void Joint::DoCalib()
       if (_calib_counter > 3)
       {
         _encoder->set_zero(_limit_switch_pos);
-        vel_setpoint = 0.0;
+        _ctrl_cmd = 0.0;
 
         //Wait a tiny bit so that it doesnt require huge acceleration
         if (millis() - _time_home > 1000)
@@ -219,7 +214,7 @@ void Joint::DoCalib()
         start_calib = false;
       else
       {
-        vel_setpoint = _calib_dir*_calib_speed;
+        _ctrl_cmd = _calib_dir*_calib_speed;
         closed_loop_ctrl = false;
       }
       _time_home = millis();
@@ -230,23 +225,27 @@ void Joint::DoCalib()
     {
       if ((_encoder->get() <= 0.005 && _limit_switch_pos >= 0.) || (_encoder->get() >= -0.005 && _limit_switch_pos < 0.))
       {
-        vel_setpoint = 0.0;
+        _ctrl_cmd = 0.0;
         start_calib = false;
         _returning_home_cal = false;
       }
       else
       {
-        vel_setpoint = _calib_dir*_calib_speed*-1.;
+        _ctrl_cmd = _calib_dir*_calib_speed*-1.;
         closed_loop_ctrl = false;
       }
     }
   }
 }
+  
 
-void Joint::motor_loop()
+void Joint::joint_loop()
 { 
+  CtrlCmd();
+  
   AxLimits();
   DoCalib();
   CheckForComm();
-  SendCmd();
+
+  _motor->set_speed(_ctrl_cmd);
 }

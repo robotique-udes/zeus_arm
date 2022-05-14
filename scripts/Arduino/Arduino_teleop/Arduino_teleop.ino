@@ -32,7 +32,7 @@
 #define TIME_PERIOD_ROS               100      // 100 ms publishing rate loop
 #define TIME_PERIOD_COM               1000     //1000 ms after that it sends 0
 
-#define DT_ROS 0.1
+#define DT_ROS 0.1 //Must be 1/TIME_PERIOD_ROS
 
 const int counts_per_revolution       = 6533;
 unsigned long       time_last_low     = 0;
@@ -81,7 +81,7 @@ Motor* motor_arr[N_MOTORS] = {
 
 // Create the joint objects
 Joint joint_arr[N_MOTORS] = {
-  Joint(motor_arr[0], 0.3, 0.01, TIME_PERIOD_COM), //J1
+  Joint(motor_arr[0], 0.3, 0.001, TIME_PERIOD_COM), //J1
   Joint(motor_arr[1], 1, 0.01, TIME_PERIOD_COM), //J2
   Joint(motor_arr[2], 1, 0.01, TIME_PERIOD_COM), //J3
   Joint(motor_arr[3], 1, 0.01, TIME_PERIOD_COM), //J4
@@ -140,8 +140,9 @@ void Encoder_loop()
 
 void Motor_loop()
 {
-  for (int i = 0; i < N_MOTORS; i++)
-    joint_arr[i].motor_loop();
+  for (int i = 0; i < N_MOTORS; i++){
+    joint_arr[i].joint_loop();
+  }
 }
 
 
@@ -230,7 +231,7 @@ void loop() {
     {
       double pos = enc_arr[i]->get();
       
-      joint_vel[i] = (joint_pos[i] - pos)/DT_ROS;
+      joint_vel[i] = (pos - joint_pos[i])/DT_ROS;
       joint_pos[i] = pos;
 
       joint_state.position = joint_pos;

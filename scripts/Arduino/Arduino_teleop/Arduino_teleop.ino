@@ -16,7 +16,7 @@
 
 #include "Encoder.h"
 #include "Limitswitch.h"
-#include "Motor.h"
+#include "Joint.h"
 /********************** Includes **********************/
 
 
@@ -50,7 +50,9 @@ ros::NodeHandle nh;
 ros::Publisher calib_state_pub("/zeus_arm/calibration_state", &calib_value);
 ros::Publisher joint_state_pub("/zeus_arm/joint_state", &joint_state);
 
-// Create encoder object :
+
+
+// Create encoder objects :
 Encoder* enc_arr[N_ENCODERS] = {
   new Encoder_oth(19, 18, counts_per_revolution * 2, true), //Dont forget the ratio from motor to base
   new Encoder_ams(0x41, 50, U_RAD),// J2
@@ -58,7 +60,7 @@ Encoder* enc_arr[N_ENCODERS] = {
   new Encoder_ams(0x40, 50, U_RAD) //J4
 };
 
-// Create limitswitch object
+// Create limitswitch objects
 Limitswitch* switch_arr[N_LIMITSWITCH] = {
   new Limitswitch(30, false), //joint1
   new Limitswitch(31, true), //joint2
@@ -67,30 +69,42 @@ Limitswitch* switch_arr[N_LIMITSWITCH] = {
   new Limitswitch(34, true) //joint4 down
 };
 
-// Create motor object :
-Motor motor_arr[N_MOTORS] = {
-  Motor(11, 12, 0.3, 0.01, TIME_PERIOD_COM), //J1
-  Motor(9, 10, 1, 0.01, TIME_PERIOD_COM), //J2
-  Motor(7, 8, 1, 0.01, TIME_PERIOD_COM), //J3
-  Motor(5, 22, 1, 0.01, TIME_PERIOD_COM), //J4
-  Motor(3, 4, 1, 0.01, TIME_PERIOD_COM), //J5 (opened-loop -> no setup-calib)
-  Motor(2, 13, 1, 0.01, TIME_PERIOD_COM) //J6 (opened-loop -> no setup-calib)
+// Create motor objects :
+Motor* motor_arr[N_MOTORS] = {
+  new Motor_cytron(11, 12), //joint1
+  new Motor_cytron(9, 10), //joint2
+  new Motor_cytron(7, 8), //joint3
+  new Motor_cytron(5, 22), //joint4
+  new Motor_cytron(3, 4), //joint5
+  new Motor_cytron(2, 13) //joint6
 };
+
+// Create the joint objects
+Joint joint_arr[N_MOTORS] = {
+  Joint(motor_arr[0], 0.3, 0.01, TIME_PERIOD_COM), //J1
+  Joint(motor_arr[1], 1, 0.01, TIME_PERIOD_COM), //J2
+  Joint(motor_arr[2], 1, 0.01, TIME_PERIOD_COM), //J3
+  Joint(motor_arr[3], 1, 0.01, TIME_PERIOD_COM), //J4
+  Joint(motor_arr[4], 1, 0.01, TIME_PERIOD_COM), //J5 (opened-loop -> no setup-calib)
+  Joint(motor_arr[5], 1, 0.01, TIME_PERIOD_COM) //J6 (opened-loop -> no setup-calib)
+};
+
+
 
 // Motor calibration setup
 void setup_motor_calib()
 {
   // Calibration
-  motor_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.04, -1, -2.16, 30000, M_PI/2, 10);
-  motor_arr[1].setup_calib(enc_arr[1], switch_arr[1], 0.40, -1, -0.07, 40000, M_PI/4, 10);
-  motor_arr[2].setup_calib(enc_arr[2], switch_arr[2], 0.65, 1, -0.90, 40000, M_PI/4, 10);
-  motor_arr[3].setup_calib(enc_arr[3], switch_arr[3], 0.75, -1, 0.85, 50000, M_PI/4, 10);
+  joint_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.04, -1, -2.16, 30000, 1, 0.25, 0.05);
+  joint_arr[1].setup_calib(enc_arr[1], switch_arr[1], 0.40, -1, -0.07, 40000, 1, 0.25, 0.05);
+  joint_arr[2].setup_calib(enc_arr[2], switch_arr[2], 0.65, 1, -0.90, 40000, 1, 0.25, 0.05);
+  joint_arr[3].setup_calib(enc_arr[3], switch_arr[3], 0.75, -1, 0.85, 50000, 1, 0.25, 0.05);
 
   // Axlimits
-  motor_arr[1].set_ax_limit(switch_arr[1], -1);
-  motor_arr[2].set_ax_limit(switch_arr[2], 1);
-  motor_arr[3].set_ax_limit(switch_arr[3], -1);
-  motor_arr[4].set_ax_limit(switch_arr[4], 1);
+  joint_arr[1].set_ax_limit(switch_arr[1], -1);
+  joint_arr[2].set_ax_limit(switch_arr[2], 1);
+  joint_arr[3].set_ax_limit(switch_arr[3], -1);
+  joint_arr[4].set_ax_limit(switch_arr[4], 1);
 }
 
 /********************** CALLBACKS **********************/
@@ -98,12 +112,12 @@ void MessageCallback(const std_msgs::Float64MultiArray & cmd_msg)
 {
   for (int i = 0; i < N_MOTORS; i++)
   {
-    motor_arr[i].vel_setpoint = cmd_msg.data[i];
-    motor_arr[i].UpdateLastComm();
+    joint_arr[i].vel_setpoint = cmd_msg.data[i];
+    joint_arr[i].UpdateLastComm();
 
     //***************** TO BE CHANGED ************************
     if (i<N_ENCODERS)
-      motor_arr[i].closed_loop_ctrl = true;
+      joint_arr[i].closed_loop_ctrl = true;
   }
 }
 
@@ -127,7 +141,7 @@ void Encoder_loop()
 void Motor_loop()
 {
   for (int i = 0; i < N_MOTORS; i++)
-    motor_arr[i].motor_loop();
+    joint_arr[i].motor_loop();
 }
 
 
@@ -145,12 +159,12 @@ void Calib_loop()
     {
       if (!in_calib)
       {
-        motor_arr[calib_value.data-1].StartCalib();
+        joint_arr[calib_value.data-1].StartCalib();
         in_calib = true;
       }
       else
       { // If calib of motor is done
-        if (!motor_arr[calib_value.data-1].start_calib)
+        if (!joint_arr[calib_value.data-1].start_calib)
         {
           in_calib = false;
           if (calib_value.data == 1 || !calib_all_joints)
@@ -222,7 +236,7 @@ void loop() {
       joint_state.position = joint_pos;
       joint_state.velocity = joint_vel;
       
-      motor_arr[i].actual_vel = joint_vel[i];
+      joint_arr[i].actual_vel = joint_vel[i];
     }
     // Send joint state
     joint_state_pub.publish(&joint_state);

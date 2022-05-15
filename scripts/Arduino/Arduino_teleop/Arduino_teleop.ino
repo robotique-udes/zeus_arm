@@ -6,10 +6,9 @@
 #include <std_msgs/Float64MultiArray.h>
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Int16.h>
+#include <std_msgs/Float64.h>
 #include <std_msgs/Bool.h>
 
-
-#include <std_msgs/String.h>
 /*
  * No need to include them since its only class specific objects
   #include "CytronMotorDriver.h"
@@ -46,7 +45,9 @@ bool in_calib = false;
 
 std_msgs::Int16 calib_value;
 sensor_msgs::JointState joint_state;
-float joint_pos[N_ENCODERS], joint_vel[N_ENCODERS];
+float joint_pos[N_ENCODERS], joint_vel[N_ENCODERS], joint_mode[N_ENCODERS];
+
+
 
 ros::NodeHandle nh;
 ros::Publisher calib_state_pub("/zeus_arm/calibration_state", &calib_value);
@@ -54,7 +55,7 @@ ros::Publisher joint_state_pub("/zeus_arm/joint_state", &joint_state);
 
 
 
-std_msgs::String debug;
+std_msgs::Float64 debug;
 ros::Publisher debug_pub("/zeus_arm/debug", &debug);
 
 
@@ -88,7 +89,7 @@ Motor* motor_arr[N_MOTORS] = {
 
 // Create the joint objects
 Joint joint_arr[N_MOTORS] = {
-  Joint(motor_arr[0], 0.3, 0.001, TIME_PERIOD_COM), //J1
+  Joint(motor_arr[0], 0.4, 0.001, TIME_PERIOD_COM, true), //J1 (reverse motor dir in closedloop)
   Joint(motor_arr[1], 1, 0.01, TIME_PERIOD_COM), //J2
   Joint(motor_arr[2], 1, 0.01, TIME_PERIOD_COM), //J3
   Joint(motor_arr[3], 1, 0.01, TIME_PERIOD_COM), //J4
@@ -102,7 +103,7 @@ Joint joint_arr[N_MOTORS] = {
 void setup_motor_calib()
 {
   // Calibration
-  joint_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.04, -1, -2.16, 30000, 1, 0.25, 0.005);
+  joint_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.10, -1, -2.16, 30000, 1, 0.0, 0.0);
   joint_arr[1].setup_calib(enc_arr[1], switch_arr[1], 0.40, -1, -0.07, 40000, 1, 0.25, 0.05);
   joint_arr[2].setup_calib(enc_arr[2], switch_arr[2], 0.65, 1, -0.90, 40000, 1, 0.25, 0.05);
   joint_arr[3].setup_calib(enc_arr[3], switch_arr[3], 0.75, -1, 0.85, 50000, 1, 0.25, 0.05);
@@ -200,6 +201,7 @@ void setup() {
 
   joint_state.position_length = N_ENCODERS;
   joint_state.velocity_length = N_ENCODERS;
+  joint_state.effort_length = N_ENCODERS;
 
   // Init ROS stuff
   nh.initNode();
@@ -220,11 +222,6 @@ void setup() {
   setup_motor_calib();
 
   Serial.println("Setup");
-
-  /*
-  joint_arr[0].vel_setpoint = 0.3;
-  joint_arr[0].closed_loop_ctrl = true;
-  */
 }
 
 void loop() {
@@ -249,19 +246,23 @@ void loop() {
       joint_vel[i] = (pos - joint_pos[i])/DT_ROS;
       joint_pos[i] = pos;
 
-      joint_state.position = joint_pos;
-      joint_state.velocity = joint_vel;
-      
+      joint_mode[i] = joint_arr[i].closed_loop_ctrl;
       joint_arr[i].actual_vel = joint_vel[i];
     }
+    
+    joint_state.position = joint_pos;
+    joint_state.velocity = joint_vel;
+    joint_state.effort = joint_mode;
+    
     // Send joint state
     joint_state_pub.publish(&joint_state);
 
     // Send calib state
     calib_state_pub.publish(&calib_value);
 
-    debug.data = String(joint_arr[0].debug, 6).c_str();
+    debug.data = joint_arr[0].debug;
     debug_pub.publish(&debug);
+    
 
     time_last_low = time_now;
   }

@@ -6,9 +6,9 @@
 class Joint
 {
   public:
-    Joint(Motor* motor, double max_speed, double min_speed_threshold, unsigned int time_period_com);
+    Joint(Motor* motor, double max_speed, double min_speed_threshold, unsigned int time_period_com, bool rev_dir);
     void setup_calib(Encoder* enc, Limitswitch* swtch, double calib_speed, int calib_dir, double limit_switch_pos, 
-        unsigned int max_time_calib, float kp, float kd, float ki, unsigned int closed_loop_period, float max_ie);
+        unsigned int max_time_calib, float kp, float kd, float ki, float max_ie);
 
     //Ax limit
     void set_ax_limit(Limitswitch* swtch, int dir);
@@ -86,17 +86,20 @@ class Joint
 };
 
 
-Joint::Joint(Motor* motor, double max_speed, double min_speed_threshold, unsigned int time_period_com=1000)
+Joint::Joint(Motor* motor, double max_speed, double min_speed_threshold, unsigned int time_period_com=1000, bool rev_dir=false)
   : _motor(motor)
 {   
   _max_speed = max_speed;
   _min_speed_threshold = min_speed_threshold;
 
   _time_period_com = time_period_com;
+
+  if (rev_dir)
+    _sign = -1;
 }
 
 void Joint::setup_calib(Encoder* enc, Limitswitch* swtch, double calib_speed, int calib_dir, double limit_switch_pos, 
-              unsigned int max_time_calib, float kp=1., float kd=0., float ki=0., unsigned int closed_loop_period=50, float max_ie=100)
+              unsigned int max_time_calib, float kp=1., float kd=0., float ki=0., float max_ie=100)
 {
   // get object pointer
   _encoder = enc;
@@ -114,8 +117,7 @@ void Joint::setup_calib(Encoder* enc, Limitswitch* swtch, double calib_speed, in
 
   // PID
   _max_ie = max_ie;
-  _closed_loop_period = closed_loop_period;
- 
+  
   _kp = kp;
   _kd = kd;
   _ki = ki;
@@ -159,53 +161,47 @@ void Joint::CtrlCmd()
   if (_calibration_setup && closed_loop_ctrl)
   {
     unsigned long t = millis();
-    if ((t-_previous_t)>_closed_loop_period)
+    double elapsedTime = (double)(t-_previous_t);
+    if (elapsedTime!=0)
     {
-      /*
-      if (abs(vel_setpoint) < _min_speed_threshold) 
-        _ctrl_cmd = 0;
-      else
-      {*/
-        // Make sure the main loop is updating actual_vel; 
-        double error = vel_setpoint - actual_vel; 
-        
-        // KP
-        _ctrl_cmd = _kp*error;
-        
-        // KD
-        if (_kd != 0)
-        {
-          double d_e = ((error-_previous_e)*1000)/(t-_previous_t);
-          _ctrl_cmd += _kd*d_e;
-        }
+      // Make sure the main loop is updating actual_vel; 
+      double error = vel_setpoint - actual_vel;
+      debug = error; 
+      
+      // KP
+      _ctrl_cmd = _kp*error;
+      
+      // KD
+      if (_kd != 0)
+      {
+        double d_e = (error-_previous_e)/elapsedTime;
+        _ctrl_cmd -= _kd*d_e;
+      }
 
-        // KI
-        if (_ki != 0)
-        {
-          _ie += error*(t-_previous_t);
-          if (abs(_ie) > _max_ie && _ie != 0)
-            _ie = (abs(_ie)/_ie)*_max_ie; //keep only the sign of _ie * _max_ie
-          _ctrl_cmd += _ki*_ie;
-        }
-        
-        _previous_e = error;
-        _ctrl_cmd = _ctrl_cmd + actual_vel;
-      //}
+      // KI
+      if (_ki != 0)
+      {
+        _ie += error*(t-_previous_t);
+        if (abs(_ie) > _max_ie && _ie != 0)
+          _ie = (abs(_ie)/_ie)*_max_ie; //keep only the sign of _ie * _max_ie
+        _ctrl_cmd += _ki*_ie;
+      }
+      
+      _previous_e = error;
+      _ctrl_cmd = _ctrl_cmd + actual_vel;
+      
       _previous_t = t;
     }
     _cmd = _ctrl_cmd;
   }
   
   // If in opened loop:
-  else
-  {
-    //Scale the setpoint from -1 to 1
+  else //Scale the setpoint from -1 to 1
     _cmd = MapCommand(vel_setpoint, 1.0, _max_speed);
 
-    //If cmd is too small just send 0
-    if (abs(_cmd) < _min_speed_threshold) 
-      _cmd = 0;
-  }
+  //If cmd is too small just send 0
+  if (abs(_cmd) < _min_speed_threshold) 
+    _cmd = 0;
 
 }
 
@@ -224,7 +220,7 @@ void Joint::DoCalib()
     {
       //Debouncing
       _calib_counter += 1; 
-      if (_calib_counter > 3)
+      if (_calib_counter >= 2)
       {
         _encoder->set_zero(_limit_switch_pos);
         _cmd = 0.0;
@@ -274,18 +270,12 @@ void Joint::DoCalib()
 void Joint::joint_loop()
 { 
   CtrlCmd();
-
-  /*
-  Serial.print(millis());
-  Serial.print(" | ");
-  Serial.println(_cmd);
-  */
   
   AxLimits();
   DoCalib();
   CheckForComm();
 
-  //_motor->set_speed(_cmd);
+  _motor->set_speed(_cmd);
   
-  debug = _cmd;
+  //debug = _cmd;
 }

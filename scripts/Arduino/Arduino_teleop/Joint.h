@@ -29,7 +29,7 @@ class Joint
     
     bool closed_loop_ctrl = false;
 
-    double debug;
+    double debug=1;
     
     
   private:

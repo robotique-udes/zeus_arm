@@ -8,6 +8,8 @@
 #include <std_msgs/Int16.h>
 #include <std_msgs/Bool.h>
 
+
+#include <std_msgs/String.h>
 /*
  * No need to include them since its only class specific objects
   #include "CytronMotorDriver.h"
@@ -49,6 +51,11 @@ float joint_pos[N_ENCODERS], joint_vel[N_ENCODERS];
 ros::NodeHandle nh;
 ros::Publisher calib_state_pub("/zeus_arm/calibration_state", &calib_value);
 ros::Publisher joint_state_pub("/zeus_arm/joint_state", &joint_state);
+
+
+
+std_msgs::String debug;
+ros::Publisher debug_pub("/zeus_arm/debug", &debug);
 
 
 
@@ -95,7 +102,7 @@ Joint joint_arr[N_MOTORS] = {
 void setup_motor_calib()
 {
   // Calibration
-  joint_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.04, -1, -2.16, 30000, 0.1, 0.025, 0.005);
+  joint_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.04, -1, -2.16, 30000, 1, 0.25, 0.005);
   joint_arr[1].setup_calib(enc_arr[1], switch_arr[1], 0.40, -1, -0.07, 40000, 1, 0.25, 0.05);
   joint_arr[2].setup_calib(enc_arr[2], switch_arr[2], 0.65, 1, -0.90, 40000, 1, 0.25, 0.05);
   joint_arr[3].setup_calib(enc_arr[3], switch_arr[3], 0.75, -1, 0.85, 50000, 1, 0.25, 0.05);
@@ -116,8 +123,8 @@ void MessageCallback(const std_msgs::Float64MultiArray & cmd_msg)
     joint_arr[i].UpdateLastComm();
 
     //***************** TO BE CHANGED ************************
-    if (i<N_ENCODERS)
-      joint_arr[i].closed_loop_ctrl = true;
+    //if (i<N_ENCODERS)
+      //joint_arr[i].closed_loop_ctrl = true;
   }
 }
 
@@ -141,8 +148,6 @@ void Encoder_loop()
 void Motor_loop()
 {
   for (int i = 0; i < N_MOTORS; i++){
-    joint_arr[i].vel_setpoint = -0.2;
-    joint_arr[i].closed_loop_ctrl = true;
     joint_arr[i].joint_loop();
     break;
   }
@@ -205,6 +210,8 @@ void setup() {
   nh.advertise(calib_state_pub);
   nh.advertise(joint_state_pub);
 
+  nh.advertise(debug_pub);
+
   // Setup encoders
   for (int i = 0; i < N_ENCODERS; i++)
     enc_arr[i]->setup_enc();
@@ -213,6 +220,11 @@ void setup() {
   setup_motor_calib();
 
   Serial.println("Setup");
+
+  /*
+  joint_arr[0].vel_setpoint = 0.3;
+  joint_arr[0].closed_loop_ctrl = true;
+  */
 }
 
 void loop() {
@@ -247,6 +259,9 @@ void loop() {
 
     // Send calib state
     calib_state_pub.publish(&calib_value);
+
+    debug.data = String(joint_arr[0].debug).c_str();
+    debug_pub.publish(&debug);
 
     time_last_low = time_now;
   }

@@ -260,7 +260,7 @@ void loop() {
     // Send calib state
     calib_state_pub.publish(&calib_value);
 
-    debug.data = String(joint_arr[0].debug).c_str();
+    debug.data = String(joint_arr[0].debug, 6).c_str();
     debug_pub.publish(&debug);
 
     time_last_low = time_now;

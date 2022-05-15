@@ -42,5 +42,5 @@ void Motor_cytron::set_speed(double pwm)
   //Scale the setpoint in -255 to 255
   double cmd = MapCommand(pwm, 1., 255.0); 
   
-  //_motor.setSpeed(cmd);
+  _motor.setSpeed(cmd);
 }

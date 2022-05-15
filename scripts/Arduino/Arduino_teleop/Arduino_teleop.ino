@@ -48,11 +48,9 @@ sensor_msgs::JointState joint_state;
 float joint_pos[N_ENCODERS], joint_vel[N_ENCODERS], joint_mode[N_ENCODERS];
 
 
-
 ros::NodeHandle nh;
 ros::Publisher calib_state_pub("/zeus_arm/calibration_state", &calib_value);
 ros::Publisher joint_state_pub("/zeus_arm/joint_state", &joint_state);
-
 
 
 std_msgs::Float64 debug;
@@ -103,7 +101,7 @@ Joint joint_arr[N_MOTORS] = {
 void setup_motor_calib()
 {
   // Calibration
-  joint_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.10, -1, -2.16, 30000, 1, 0.0, 0.0);
+  joint_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.10, -1, -2.16, 30000, 1, 0, 0);
   joint_arr[1].setup_calib(enc_arr[1], switch_arr[1], 0.40, -1, -0.07, 40000, 1, 0.25, 0.05);
   joint_arr[2].setup_calib(enc_arr[2], switch_arr[2], 0.65, 1, -0.90, 40000, 1, 0.25, 0.05);
   joint_arr[3].setup_calib(enc_arr[3], switch_arr[3], 0.75, -1, 0.85, 50000, 1, 0.25, 0.05);
@@ -234,20 +232,17 @@ void loop() {
   Encoder_loop();
 
   // Motor loop
-  Motor_loop();
+  //Motor_loop();
 
   // Low level loop
   if ((time_now - time_last_low) > TIME_PERIOD_ROS )
   {
+    Motor_loop();
     for (int i = 0; i < N_ENCODERS; i++)
-    {
-      double pos = enc_arr[i]->get();
-      
-      joint_vel[i] = (pos - joint_pos[i])/DT_ROS;
-      joint_pos[i] = pos;
-
+    {     
+      joint_vel[i] = joint_arr[i].actual_vel;
+      joint_pos[i] = joint_arr[i].actual_pos;
       joint_mode[i] = joint_arr[i].closed_loop_ctrl;
-      joint_arr[i].actual_vel = joint_vel[i];
     }
     
     joint_state.position = joint_pos;

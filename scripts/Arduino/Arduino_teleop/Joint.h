@@ -23,6 +23,7 @@ class Joint
     
     double vel_setpoint = 0.0;
     double actual_vel = 0.0;
+    double actual_pos = 0.0;
 
     void StartCalib();
     bool start_calib = false;
@@ -39,6 +40,8 @@ class Joint
     void SendCmd();
 
     double _cmd, _ctrl_cmd;
+
+    double _previous_pos;
   
     int     _pin_pwm;
     int     _pin_dir;
@@ -99,7 +102,7 @@ Joint::Joint(Motor* motor, double max_speed, double min_speed_threshold, unsigne
 }
 
 void Joint::setup_calib(Encoder* enc, Limitswitch* swtch, double calib_speed, int calib_dir, double limit_switch_pos, 
-              unsigned int max_time_calib, float kp=1., float kd=0., float ki=0., float max_ie=100)
+              unsigned int max_time_calib, float kp=1., float kd=0., float ki=0., float max_ie=1000)
 {
   // get object pointer
   _encoder = enc;
@@ -161,12 +164,15 @@ void Joint::CtrlCmd()
   if (_calibration_setup && closed_loop_ctrl)
   {
     unsigned long t = millis();
-    double elapsedTime = (double)(t-_previous_t);
-    if (elapsedTime!=0)
+    double elapsedTime = (double)((t-_previous_t)/1000);
+    
+    if (elapsedTime>0.05)
     {
-      // Make sure the main loop is updating actual_vel; 
-      double error = vel_setpoint - actual_vel;
-      debug = error; 
+      actual_pos = _encoder->get();
+      actual_vel = (actual_pos - _previous_pos)/elapsedTime;
+      _previous_pos = actual_pos;
+       
+      double error = vel_setpoint - actual_vel; 
       
       // KP
       _ctrl_cmd = _kp*error;
@@ -175,13 +181,14 @@ void Joint::CtrlCmd()
       if (_kd != 0)
       {
         double d_e = (error-_previous_e)/elapsedTime;
-        _ctrl_cmd -= _kd*d_e;
+        _ctrl_cmd += _kd*d_e;
       }
 
       // KI
       if (_ki != 0)
       {
-        _ie += error*(t-_previous_t);
+        _ie += error*elapsedTime;
+        //debug = _ie;
         if (abs(_ie) > _max_ie && _ie != 0)
           _ie = (abs(_ie)/_ie)*_max_ie; //keep only the sign of _ie * _max_ie
         _ctrl_cmd += _ki*_ie;
@@ -193,6 +200,7 @@ void Joint::CtrlCmd()
       _previous_t = t;
     }
     _cmd = _ctrl_cmd;
+    debug = actual_vel;
   }
   
   // If in opened loop:

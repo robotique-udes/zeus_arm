@@ -123,8 +123,8 @@ void MessageCallback(const std_msgs::Float64MultiArray & cmd_msg)
     joint_arr[i].UpdateLastComm();
 
     //***************** TO BE CHANGED ************************
-    //if (i<N_ENCODERS)
-      //joint_arr[i].closed_loop_ctrl = true;
+    if (i<N_ENCODERS)
+      joint_arr[i].closed_loop_ctrl = true;
   }
 }
 

@@ -1,4 +1,6 @@
 #include "CytronMotorDriver.h"
+#include <Servo.h>
+
 
 /********************** Functions **********************/
 double MapCommand(double x, double in_max, double out_max)
@@ -43,4 +45,33 @@ void Motor_cytron::set_speed(double pwm)
   double cmd = MapCommand(pwm, 1., 255.0); 
   
   _motor.setSpeed(cmd);
+}
+
+
+
+
+class Motor_talon : public Motor
+{
+  public:
+    Motor_talon(int pin_pwm);
+    virtual void set_speed(double pwm);
+  private: 
+    Servo _talon_controller;
+};
+
+
+Motor_talon::Motor_talon(int pin_pwm)
+{   
+  _talon_controller.attach(pin_pwm);
+}
+
+
+void Motor_talon::set_speed(double pwm)
+{
+  if (pwm > 1) pwm = 1;
+  if (pwm < -1) pwm = -1;
+  //Scale the setpoint to 1000 - 2000
+  double cmd = pwm * 500 + 1500;
+  
+  _talon_controller.writeMicroseconds(cmd);
 }

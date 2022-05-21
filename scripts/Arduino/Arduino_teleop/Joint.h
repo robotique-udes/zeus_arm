@@ -75,7 +75,7 @@ class Joint
     double _previous_e, _ie;
     float _max_ie;
     unsigned int _closed_loop_period;
-    unsigned long _previous_t;
+    long _previous_t;
 
     // Ax limit
     struct ax_limit
@@ -163,10 +163,10 @@ void Joint::CtrlCmd()
   // If in closed loop
   if (_calibration_setup && closed_loop_ctrl)
   {
-    unsigned long t = millis();
-    double elapsedTime = (double)((t-_previous_t)/1000);
+    long t = millis();
+    double elapsedTime = ((double)(t-_previous_t)/1000);
     
-    if (elapsedTime>0.05)
+    if (elapsedTime>0)
     {
       actual_pos = _encoder->get();
       actual_vel = (actual_pos - _previous_pos)/elapsedTime;
@@ -183,7 +183,7 @@ void Joint::CtrlCmd()
         double d_e = (error-_previous_e)/elapsedTime;
         _ctrl_cmd += _kd*d_e;
       }
-
+    
       // KI
       if (_ki != 0)
       {
@@ -201,6 +201,7 @@ void Joint::CtrlCmd()
     }
     _cmd = _ctrl_cmd;
     debug = actual_vel;
+    
   }
   
   // If in opened loop:

@@ -30,10 +30,8 @@
 #define N_ENCODERS 4
 #define N_LIMITSWITCH 5
 
-#define TIME_PERIOD_ROS               100      // 100 ms publishing rate loop
+#define TIME_PERIOD_ROS               50      // 100 ms publishing rate loop
 #define TIME_PERIOD_COM               1000     //1000 ms after that it sends 0
-
-#define DT_ROS 0.1 //Must be 1/TIME_PERIOD_ROS
 
 const int counts_per_revolution       = 6533;
 unsigned long       time_last_low     = 0;
@@ -82,7 +80,7 @@ Motor* motor_arr[N_MOTORS] = {
   new Motor_cytron(7, 8), //joint3
   new Motor_cytron(5, 22), //joint4
   new Motor_cytron(3, 4), //joint5
-  new Motor_cytron(2, 13) //joint6
+  new Motor_talon(2)//new Motor_cytron(2, 13) //joint6
 };
 
 // Create the joint objects
@@ -101,10 +99,10 @@ Joint joint_arr[N_MOTORS] = {
 void setup_motor_calib()
 {
   // Calibration
-  joint_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.10, -1, -2.16, 30000, 1, 0, 0);
-  joint_arr[1].setup_calib(enc_arr[1], switch_arr[1], 0.40, -1, -0.07, 40000, 1, 0.25, 0.05);
-  joint_arr[2].setup_calib(enc_arr[2], switch_arr[2], 0.65, 1, -0.90, 40000, 1, 0.25, 0.05);
-  joint_arr[3].setup_calib(enc_arr[3], switch_arr[3], 0.75, -1, 0.85, 50000, 1, 0.25, 0.05);
+  joint_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.10, -1, -2.16, 30000, 1., 0.0, 0.0);
+  joint_arr[1].setup_calib(enc_arr[1], switch_arr[1], 0.40, -1, -0.07, 40000, 1, 0, 0);
+  joint_arr[2].setup_calib(enc_arr[2], switch_arr[2], 0.65, 1, -0.90, 40000, 1, 0, 0);
+  joint_arr[3].setup_calib(enc_arr[3], switch_arr[3], 0.75, -1, 0.85, 50000, 1, 0, 0);
 
   // Axlimits
   joint_arr[1].set_ax_limit(switch_arr[1], -1);
@@ -148,7 +146,7 @@ void Motor_loop()
 {
   for (int i = 0; i < N_MOTORS; i++){
     joint_arr[i].joint_loop();
-    break;
+    //break;
   }
 }
 
@@ -222,6 +220,7 @@ void setup() {
   Serial.println("Setup");
 }
 
+
 void loop() {
   time_now = millis();
 
@@ -232,12 +231,11 @@ void loop() {
   Encoder_loop();
 
   // Motor loop
-  //Motor_loop();
+  Motor_loop();
 
   // Low level loop
   if ((time_now - time_last_low) > TIME_PERIOD_ROS )
   {
-    Motor_loop();
     for (int i = 0; i < N_ENCODERS; i++)
     {     
       joint_vel[i] = joint_arr[i].actual_vel;

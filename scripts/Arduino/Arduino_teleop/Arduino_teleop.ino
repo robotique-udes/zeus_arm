@@ -99,16 +99,16 @@ Joint joint_arr[N_MOTORS] = {
 void setup_motor_calib()
 {
   // Calibration
-  joint_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.10, -1, -2.16, 30000, 1., 0.0, 0.0);
-  joint_arr[1].setup_calib(enc_arr[1], switch_arr[1], 0.40, -1, -0.07, 40000, 1, 0, 0);
-  joint_arr[2].setup_calib(enc_arr[2], switch_arr[2], 0.65, 1, -0.90, 40000, 1, 0, 0);
+  joint_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.10, -1, -2.16, 60000, 1., 0.0, 0.0);
+  joint_arr[1].setup_calib(enc_arr[1], switch_arr[1], 0.40, 1, -0.07, 60000, 1, 0, 0);
+  joint_arr[2].setup_calib(enc_arr[2], switch_arr[2], 0.65, 1, -0.90, 60000, 1, 0, 0);
   joint_arr[3].setup_calib(enc_arr[3], switch_arr[3], 0.75, -1, 0.85, 50000, 1, 0, 0);
 
   // Axlimits
   joint_arr[1].set_ax_limit(switch_arr[1], -1);
   joint_arr[2].set_ax_limit(switch_arr[2], 1);
   joint_arr[3].set_ax_limit(switch_arr[3], -1);
-  joint_arr[4].set_ax_limit(switch_arr[4], 1);
+  joint_arr[3].set_ax_limit(switch_arr[4], 1);
 }
 
 /********************** CALLBACKS **********************/

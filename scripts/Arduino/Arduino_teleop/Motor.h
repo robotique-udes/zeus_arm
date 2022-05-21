@@ -72,7 +72,8 @@ void Motor_talon::set_speed(double pwm)
   if (pwm < -1) pwm = -1;
   //Scale the setpoint to 1000 - 2000
   //double cmd = pwm * 500 + 1500;
+  //Scale between 0 and 180;
   double cmd = pwm * 90 + 90;
   
-  _talon_controller.writeMicroseconds(cmd);
+  _talon_controller.write(cmd);
 }

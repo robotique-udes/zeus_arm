@@ -78,6 +78,9 @@ class TeleopNode():
         self.ddr.start(self.dynamic_reconfigure_callback)
         rospy.sleep(1)
 
+        self.estop = False
+        self.estop_delay = time.time()
+
 
     def dynamic_reconfigure_callback(self, config, level):
 
@@ -226,17 +229,20 @@ class TeleopNode():
             buttons[12] -> R3
         '''
         # ESTOP activated
-        if msg.buttons[4]:
+        if msg.buttons[4] and not self.estop and time.time() - self.estop_delay > 1:
             self.estop_pub.publish(Bool(True))
             rospy.logwarn("ESTOP has been activated...")
-            time.sleep(0.5)
+            self.estop = True
+            self.estop_delay = time.time()
 
 
         # Check dead man switch
         if msg.buttons[5]:
-            if msg.buttons[6]:
+            if msg.buttons[4] and self.estop and time.time() - self.estop_delay > 1:
                 self.estop_pub.publish(Bool(False))
                 rospy.loginfo("ESTOP deactivated...")
+                self.estop = False
+                self.estop_delay = time.time()
 
             # Send calibration signal if back/share button is clicked
             if msg.buttons[6] or self.start_calib:

@@ -19,7 +19,7 @@ import rospy
 import numpy as np
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy, JointState
-from std_msgs.msg import Int16, Float64MultiArray
+from std_msgs.msg import Int16, Float64MultiArray, Bool
 from ddynamic_reconfigure_python.ddynamic_reconfigure import DDynamicReconfigure
 
 
@@ -53,6 +53,7 @@ class TeleopNode():
         self.cmd_pub = rospy.Publisher('/zeus_arm/teleop_cmd', Twist, queue_size=10)
         self.cmd_pub_linear = rospy.Publisher('/zeus_arm/linear_cmd', Float64MultiArray, queue_size=10)
         self.calib_pub = rospy.Publisher('/zeus_arm/calib_cmd', Int16, queue_size=10)
+        self.estop_pub = rospy.Publisher('/zeus_arm/estop', Bool, queue_size=10)
 
         # Subscribe to joystick
         rospy.Subscriber('/joy_arm', Joy, self.joy_callback)
@@ -224,9 +225,18 @@ class TeleopNode():
             buttons[11] -> L3
             buttons[12] -> R3
         '''
+        # ESTOP activated
+        if msg.buttons[4]:
+            self.estop_pub.publish(Bool(True))
+            rospy.logwarn("ESTOP has been activated...")
+            time.sleep(0.5)
+
 
         # Check dead man switch
         if msg.buttons[5]:
+            if msg.buttons[6]:
+                self.estop_pub.publish(Bool(False))
+                rospy.loginfo("ESTOP deactivated...")
 
             # Send calibration signal if back/share button is clicked
             if msg.buttons[6] or self.start_calib:

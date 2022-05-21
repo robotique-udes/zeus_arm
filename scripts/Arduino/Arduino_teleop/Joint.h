@@ -31,6 +31,8 @@ class Joint
     bool closed_loop_ctrl = false;
 
     double debug=1;
+
+    bool estop_soft = false;
     
     
   private:
@@ -284,6 +286,8 @@ void Joint::joint_loop()
   DoCalib();
   CheckForComm();
 
+  if (estop_soft)
+    _cmd = 0;
   _motor->set_speed(_cmd);
   
   //debug = _cmd;

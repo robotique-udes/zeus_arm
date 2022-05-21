@@ -130,9 +130,18 @@ void CalibCallback(const std_msgs::Int16 & calib_cmd)
   calib_value.data = calib_cmd.data;
 }
 
+void EstopCallback(const std_msgs::Bool & estop)
+{
+  for (int i=0; i<N_MOTORS; i++)
+  {
+    joint_arr[i].estop_soft = estop.data;
+  }
+}
+
 // ROS subscribers
 ros::Subscriber<std_msgs::Float64MultiArray> cmd_sub("/zeus_arm/joint_commands", &MessageCallback );
 ros::Subscriber<std_msgs::Int16> calib_sub("/zeus_arm/calib_cmd", &CalibCallback );
+ros::Subscriber<std_msgs::Bool> estop_sub("/zeus_arm/estop", &EstopCallback );
 
 
 // Loops
@@ -204,6 +213,7 @@ void setup() {
   
   nh.subscribe(cmd_sub);
   nh.subscribe(calib_sub);
+  nh.subscribe(estop_sub);
   
   nh.advertise(calib_state_pub);
   nh.advertise(joint_state_pub);

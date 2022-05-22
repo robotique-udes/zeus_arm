@@ -17,6 +17,7 @@ double MapCommand(double x, double in_max, double out_max)
 class Motor
 {
   public:   
+    virtual void setup();
     virtual void set_speed(double pwm);
   
 };
@@ -25,19 +26,23 @@ class Motor_cytron : public Motor
 {
   public:
     Motor_cytron(int pin_pwm, int pin_dir);
+    virtual void setup();
     virtual void set_speed(double pwm);
   private: 
     CytronMD _motor;
+
+    int _pin_pwm, _pin_dir;
 };
 
 
 Motor_cytron::Motor_cytron(int pin_pwm, int pin_dir)
-  : _motor(PWM_DIR, pin_pwm, pin_dir)
-{   
-  pinMode(pin_pwm, OUTPUT);
-  pinMode(pin_dir, OUTPUT);
-}
+  : _motor(PWM_DIR, pin_pwm, pin_dir), _pin_pwm(pin_pwm), _pin_dir(pin_dir){}
 
+void Motor_cytron::setup()
+{   
+  pinMode(_pin_pwm, OUTPUT);
+  pinMode(_pin_dir, OUTPUT);
+}
 
 void Motor_cytron::set_speed(double pwm)
 {
@@ -54,17 +59,23 @@ class Motor_talon : public Motor
 {
   public:
     Motor_talon(int pin_pwm);
+    virtual void setup();
     virtual void set_speed(double pwm);
   private: 
     Servo _talon_controller;
+    int _pin_pwm;
 };
 
 
 Motor_talon::Motor_talon(int pin_pwm)
 {   
-  _talon_controller.attach(pin_pwm);
+  _pin_pwm = pin_pwm;
 }
 
+void Motor_talon::setup()
+{
+  _talon_controller.attach(_pin_pwm);
+}
 
 void Motor_talon::set_speed(double pwm)
 {

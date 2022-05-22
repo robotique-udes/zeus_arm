@@ -220,6 +220,10 @@ void setup() {
 
   nh.advertise(debug_pub);
 
+  // Setup the talon drive
+  for (int i = 0; i < N_MOTORS; i++)
+    motor_arr[i]->setup();
+
   // Setup encoders
   for (int i = 0; i < N_ENCODERS; i++)
     enc_arr[i]->setup_enc();

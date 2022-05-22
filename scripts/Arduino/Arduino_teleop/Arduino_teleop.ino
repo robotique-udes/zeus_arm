@@ -78,7 +78,7 @@ Motor* motor_arr[N_MOTORS] = {
   new Motor_cytron(11, 12), //joint1
   new Motor_cytron(9, 10), //joint2
   new Motor_cytron(7, 8), //joint3
-  new Motor_cytron(5, 22), //joint4
+  new Motor_cytron(5, 6), //joint4
   new Motor_cytron(3, 4), //joint5
   new Motor_talon(2)//new Motor_cytron(2, 13) //joint6
 };
@@ -99,8 +99,8 @@ Joint joint_arr[N_MOTORS] = {
 void setup_motor_calib()
 {
   // Calibration
-  joint_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.10, -1, -2.16, 60000, 1., 0.0, 0.0);
-  joint_arr[1].setup_calib(enc_arr[1], switch_arr[1], 0.40, 1, -0.07, 60000, 1, 0, 0);
+  joint_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.20, -1, -2.16, 60000, 1., 0.0, 0.0);
+  joint_arr[1].setup_calib(enc_arr[1], switch_arr[1], 0.40, -1, -0.07, 60000, 1, 0, 0);
   joint_arr[2].setup_calib(enc_arr[2], switch_arr[2], 0.65, 1, -0.90, 60000, 1, 0, 0);
   joint_arr[3].setup_calib(enc_arr[3], switch_arr[3], 0.75, -1, 0.85, 50000, 1, 0, 0);
 

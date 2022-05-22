@@ -71,7 +71,7 @@ class TeleopNode():
         self.ddr.add_variable("J3_speed", "float", 0.8, 0, np.pi/2)
         self.ddr.add_variable("J4_speed", "float", 1.3, 0, np.pi/2)
         self.ddr.add_variable("J5_speed", "float", 1., 0, 1.) # opened loop -1 to 1
-        self.ddr.add_variable("J6_speed", "float", 0.3, 0, 1.) # opened loop -1 to 1
+        self.ddr.add_variable("J6_speed", "float", 0.9, 0, 1.) # opened loop -1 to 1
 
 
         # # Start Server
@@ -177,10 +177,10 @@ class TeleopNode():
         # Fill command
         cmd.linear.x = msg.axes[0] * self.J1_speed 
         cmd.linear.y = msg.axes[1] * self.J2_speed 
-        cmd.linear.z = msg.axes[3] * self.J3_speed 
-        cmd.angular.x = msg.axes[4] * self.J4_speed 
-        cmd.angular.y = 0 
-        cmd.angular.z = 0
+        cmd.linear.z = msg.axes[4] * self.J3_speed * -1 #Change limit switch direction in arduino
+        cmd.angular.x = msg.axes[3] * self.J4_speed
+        cmd.angular.z = (msg.buttons[0] * -1 +  msg.buttons[3])  * 0.9#self.J5_speed
+        cmd.angular.y = (msg.buttons[1] * -1 + msg.buttons[2]) * 1#* self.J6_speed
 
         return cmd
 

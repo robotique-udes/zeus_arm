@@ -18,6 +18,7 @@
   <depend>velocity_controllers</depend>
   <depend>message_runtime</depend>
   <depend>twist_mux</depend>
+  <depend>usb_cam</depend>
 
   <export>
   </export>

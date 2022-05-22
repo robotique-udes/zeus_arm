@@ -180,7 +180,7 @@ class TeleopNode():
         cmd.linear.z = msg.axes[4] * self.J3_speed * -1 #Change limit switch direction in arduino
         cmd.angular.x = msg.axes[3] * self.J4_speed
         cmd.angular.z = (msg.buttons[0] * -1 +  msg.buttons[3])  * 0.9#self.J5_speed
-        cmd.angular.y = (msg.buttons[1] * -1 + msg.buttons[2]) * 1#* self.J6_speed
+        cmd.angular.y = (msg.buttons[2] * -1 + msg.buttons[1]) * 1#* self.J6_speed
 
         return cmd
 

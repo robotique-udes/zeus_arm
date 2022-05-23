@@ -1,13 +1,16 @@
 <?xml version='1.0'?>
 <launch>
-   <arg name="name" default="arm_camera_shoulder" />
+  
+  <arg name="name" default="arm_camera_shoulder" />
+  <arg name="stream" default="0" />
+  <arg name="jpeg_quality" default="75" />
 
    <!-- launch video stream -->
    <include file="$(find video_stream_opencv)/launch/camera.launch" >
         <!-- node name and ros graph name -->
         <arg name="camera_name" value="$(arg name)" />
         <!-- means video device 0, /dev/video0 -->
-        <arg name="video_stream_provider" value="2" />
+        <arg name="video_stream_provider" value="$(arg stream)" />
         <!-- set camera fps to (if the device allows) -->
         <arg name="set_camera_fps" value="20"/>
         <!-- set buffer queue size of frame capturing to -->
@@ -29,8 +32,6 @@
         <arg name="height" default="720"/>
    </include>
 
-   <param name="/$(arg name)/image_raw/compressed/jpeg_quality" value="75" />
+   <param name="/$(arg name)/image_raw/compressed/jpeg_quality" value="$(arg jpeg_quality)" />
 
 </launch>
-
-  

@@ -26,9 +26,18 @@
     </node>
 
     <!-- Launch cams -->
-    <include file="$(find zeus_arm)/launch/cam_shoulder.launch" />
-    <include file="$(find zeus_arm)/launch/cam_elbow.launch" />
-    <include file="$(find zeus_arm)/launch/cam_wrist.launch" />
+    <include file="$(find zeus_arm)/launch/cam.launch" >
+      <arg name="name" value="cam_wrist" />
+      <arg name="stream" value="0" />
+    </include>
+    <include file="$(find zeus_arm)/launch/cam.launch" >
+      <arg name="name" value="cam_elbow" />
+      <arg name="stream" value="1" />
+    </include>
+    <include file="$(find zeus_arm)/launch/cam.launch" >
+      <arg name="name" value="cam_shoulder" />
+      <arg name="stream" value="2" />
+    </include>
 
   </group>
 

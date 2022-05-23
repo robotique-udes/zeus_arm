@@ -24,7 +24,7 @@
   </node>
 
 -->
-   <arg name="name" default="camera" />
+   <arg name="name" default="arm_camera" />
 
    <!-- launch video stream -->
    <include file="$(find video_stream_opencv)/launch/camera.launch" >

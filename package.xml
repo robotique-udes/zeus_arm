@@ -19,6 +19,7 @@
   <depend>message_runtime</depend>
   <depend>twist_mux</depend>
   <depend>usb_cam</depend>
+  <depend>cv_camera</depend>
 
   <export>
   </export>

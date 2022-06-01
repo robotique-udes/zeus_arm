@@ -3,7 +3,7 @@
 
 	<!-- Launch joystick ROS drivers -->
 	<node name="joy_arm" type="joy_node" pkg="joy" >
-        <param name="dev" value="/dev/input/js1"/>
+        <param name="dev" value="/dev/input/js0"/>
         <param name="autorepeat_rate" value="20" />
         <remap from="joy" to="joy_arm" />
         <param name="deadzone" value="0.1" />

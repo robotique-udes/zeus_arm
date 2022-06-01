@@ -29,6 +29,8 @@
     <include file="$(find zeus_arm)/launch/cam.launch" >
       <arg name="name" value="cam_wrist" />
       <arg name="stream" value="0" />
+      <arg name="width" default="640"/>
+      <arg name="height" default="480"/>
     </include>
     <include file="$(find zeus_arm)/launch/cam.launch" >
       <arg name="name" value="cam_elbow" />

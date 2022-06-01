@@ -5,6 +5,9 @@
   <arg name="stream" default="0" />
   <arg name="jpeg_quality" default="75" />
 
+  <arg name="width" default="1280"/>
+  <arg name="height" default="720"/>
+
    <!-- launch video stream -->
    <include file="$(find video_stream_opencv)/launch/camera.launch" >
         <!-- node name and ros graph name -->
@@ -28,8 +31,8 @@
         <arg name="flip_vertical" value="false" />
         <!-- visualize on an image_view window the stream generated -->
         <arg name="visualize" value="false" />
-        <arg name="width" default="1280"/>
-        <arg name="height" default="720"/>
+        <arg name="width" default="$(arg width)"/>
+        <arg name="height" default="$(arg height)"/>
    </include>
 
    <param name="/$(arg name)/image_raw/compressed/jpeg_quality" value="$(arg jpeg_quality)" />

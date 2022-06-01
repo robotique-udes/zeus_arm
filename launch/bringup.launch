@@ -26,11 +26,23 @@
     </node>
 
     <!-- Launch cams -->
+    <!--
     <include file="$(find zeus_arm)/launch/cam.launch" >
       <arg name="name" value="cam_wrist" />
       <arg name="stream" value="2" />
       <arg name="buffer_queue_size" value="10" />
     </include>
+    -->
+    <node name="cam_wrist" pkg="usb_cam" type="usb_cam_node" output="screen" >
+      <param name="video_device" value="/dev/video2" />
+      <param name="framerate" value="30" />
+      <param name="image_width" value="640" />
+      <param name="image_height" value="480" />
+      <param name="pixel_format" value="yuyv" />
+      <param name="camera_frame_id" value="usb_cam" />
+      <param name="brightness" value="128" />
+      <param name="io_method" value="mmap"/>
+    </node>
     <include file="$(find zeus_arm)/launch/cam.launch" >
       <arg name="name" value="cam_elbow" />
       <arg name="stream" value="0" />

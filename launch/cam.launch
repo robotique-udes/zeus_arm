@@ -5,8 +5,8 @@
   <arg name="stream" default="0" />
   <arg name="jpeg_quality" default="75" />
 
-  <arg name="width" default="1280"/>
-  <arg name="height" default="720"/>
+  <arg name="width" default="0"/>
+  <arg name="height" default="0"/>
 
    <!-- launch video stream -->
    <include file="$(find video_stream_opencv)/launch/camera.launch" >

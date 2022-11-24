@@ -19,6 +19,7 @@
 #include "Encoder.h"
 #include "Limitswitch.h"
 #include "Joint.h"
+#include "SingleJoint.h"
 /********************** Includes **********************/
 
 
@@ -34,37 +35,32 @@
 #define TIME_PERIOD_ROS               100      // 100 ms publishing rate loop
 #define TIME_PERIOD_COM               1000     //1000 ms after that it sends 0
 
-#define DT_ROS 0.1 //Must be 1/TIME_PERIOD_ROS
 
-const int counts_per_revolution       = 6533;
-unsigned long       time_last_low     = 0;
-unsigned long       time_now          = 0;
+// 3200 for joint 1 motor 
+// 700 for worm gear motor (43.8:1 * 16 pulse/rot, https://media.digikey.com/pdf/Data%20Sheets/DFRobot%20PDFs/FIT0186_Web.pdf)
+const int counts_per_revolution_worm       = 700;
+const int counts_per_revolution            = 3200;
 
-// Calib all joints
-bool calib_all_joints = false;
-bool in_calib = false;
+
+unsigned long       timeLastLow     = 0;
+unsigned long       timeNow          = 0;
+
 
 std_msgs::Int16 calib_value;
 sensor_msgs::JointState joint_state;
 float joint_pos[N_ENCODERS], joint_vel[N_ENCODERS];
 
 ros::NodeHandle nh;
-ros::Publisher calib_state_pub("/zeus_arm/calibration_state", &calib_value);
+//ros::Publisher calib_state_pub("/zeus_arm/calibration_state", &calib_value);
 ros::Publisher joint_state_pub("/zeus_arm/joint_state", &joint_state);
-
-
-
-std_msgs::String debug;
-ros::Publisher debug_pub("/zeus_arm/debug", &debug);
-
 
 
 // Create encoder objects :
 Encoder* enc_arr[N_ENCODERS] = {
-  new Encoder_oth(19, 18, counts_per_revolution * 2, true), //Dont forget the ratio from motor to base
-  new Encoder_ams(0x41, 50, U_RAD),// J2
+  new Encoder_oth(19, 18, counts_per_revolution * 4, true), //Dont forget the ratio from motor to base
+  new Encoder_ams(0x41, 50, U_RAD),// J2 
   new Encoder_ams(0x42, 50, U_RAD), // J3
-  new Encoder_ams(0x40, 50, U_RAD) //J4
+  new Encoder_ams(0x40, 50, U_RAD) //J4 to be changed
 };
 
 // Create limitswitch objects
@@ -88,25 +84,18 @@ Motor* motor_arr[N_MOTORS] = {
 
 // Create the joint objects
 Joint joint_arr[N_MOTORS] = {
-  Joint(motor_arr[0], 0.3, 0.001, TIME_PERIOD_COM), //J1
-  Joint(motor_arr[1], 1, 0.01, TIME_PERIOD_COM), //J2
-  Joint(motor_arr[2], 1, 0.01, TIME_PERIOD_COM), //J3
-  Joint(motor_arr[3], 1, 0.01, TIME_PERIOD_COM), //J4
-  Joint(motor_arr[4], 1, 0.01, TIME_PERIOD_COM), //J5 (opened-loop -> no setup-calib)
-  Joint(motor_arr[5], 1, 0.01, TIME_PERIOD_COM) //J6 (opened-loop -> no setup-calib)
+  Joint(motor_arr[0], enc_arr[0], 5, -5.2, TIME_PERIOD_COM, 20, 0, 1), //J1 max 5 rad/s et -5.2 rad/s
+  Joint(motor_arr[1], enc_arr[1], 2, -2, TIME_PERIOD_COM, 100, 0, 5), //J2
+  Joint(motor_arr[2], enc_arr[2], 2, -2, TIME_PERIOD_COM, 100, 0, 5), //J3
+  Joint(motor_arr[3], enc_arr[4], 5, -5, TIME_PERIOD_COM, 20, 0, 1) //J4
+  Joint(motor_arr[4], NULL, 1, -1, TIME_PERIOD_COM), //J5 (opened-loop -> no setup-calib)
+  Joint(motor_arr[5], NULL, 1, -1, TIME_PERIOD_COM) //J6 (opened-loop -> no setup-calib)
 };
 
 
-
-// Motor calibration setup
-void setup_motor_calib()
+// Motor setup
+void setup_motor()
 {
-  // Calibration
-  joint_arr[0].setup_calib(enc_arr[0], switch_arr[0], 0.04, -1, -2.16, 30000, 1, 0.25, 0.005);
-  joint_arr[1].setup_calib(enc_arr[1], switch_arr[1], 0.40, -1, -0.07, 40000, 1, 0.25, 0.05);
-  joint_arr[2].setup_calib(enc_arr[2], switch_arr[2], 0.65, 1, -0.90, 40000, 1, 0.25, 0.05);
-  joint_arr[3].setup_calib(enc_arr[3], switch_arr[3], 0.75, -1, 0.85, 50000, 1, 0.25, 0.05);
-
   // Axlimits
   joint_arr[1].set_ax_limit(switch_arr[1], -1);
   joint_arr[2].set_ax_limit(switch_arr[2], 1);

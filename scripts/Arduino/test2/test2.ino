@@ -3,30 +3,33 @@
  * Reading analog input 0 to control analog PWM output 3
  ********************************************************/
 
-#include <PID_v1.h>
+#define TIME_PERIOD_LOOP              25
 
-//Define Variables we'll be connecting to
-double Setpoint, Input, Output;
+unsigned long       time_last_low     = 0;
+unsigned long       time_now          = 0;
 
-//Specify the links and initial tuning parameters
-double Kp=2, Ki=5, Kd=1;
-PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
+
+
 
 void setup()
 {
   Serial.begin(57600);
-  
-  //initialize the variables we're linked to
-  Input = 0.;
-  Setpoint = -100;
-
-  //turn the PID on
-  myPID.SetMode(AUTOMATIC);
+  pinMode(10, OUTPUT);
 }
 
 void loop()
 {
-  Input = 0;
-  myPID.Compute();
-  Serial.println(Output);
+  time_now = millis();
+
+  int i = 0;
+
+  // LOOOP 
+  if ((time_now - time_last_low) > TIME_PERIOD_LOOP )
+  {
+    Serial.println();
+    digitalWrite(10, HIGH);
+    
+    time_last_low = time_now;
+  }
+  
 }

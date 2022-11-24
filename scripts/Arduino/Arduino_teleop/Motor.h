@@ -1,3 +1,7 @@
+#ifndef _MOTORS
+#define _MOTORS
+
+
 #include "CytronMotorDriver.h"
 
 /********************** Functions **********************/
@@ -16,14 +20,15 @@ class Motor
 {
   public:   
     virtual void set_speed(double pwm);
-  
+    virtual void set_speed_pwm(double pwm);
 };
 
 class Motor_cytron : public Motor
 {
   public:
     Motor_cytron(int pin_pwm, int pin_dir);
-    virtual void set_speed(double pwm);
+    virtual void set_speed(double relativeVel);
+    virtual void set_speed_pwm(double pwm);
   private: 
     CytronMD _motor;
 };
@@ -37,10 +42,23 @@ Motor_cytron::Motor_cytron(int pin_pwm, int pin_dir)
 }
 
 
-void Motor_cytron::set_speed(double pwm)
+void Motor_cytron::set_speed(double relativeVel)
 {
   //Scale the setpoint in -255 to 255
-  double cmd = MapCommand(pwm, 1., 255.0); 
+  double cmd = MapCommand(relativeVel, 1., 255.0); 
   
   _motor.setSpeed(cmd);
 }
+
+
+void Motor_cytron::set_speed_pwm(double pwm)
+{
+  if (pwm > 255)
+    pwm = 255;
+  else if (pwm < -255)
+    pwm = -255;
+  
+  _motor.setSpeed((int)pwm);
+}
+
+#endif

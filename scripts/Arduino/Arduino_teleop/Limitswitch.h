@@ -1,3 +1,6 @@
+#ifndef _LIMITSWITCHES
+#define _LIMITSWITCHES
+
 
 // LIMIT SWITCH CLASS
 
@@ -25,5 +28,4 @@ bool Limitswitch::get()
 }
 
 
-
-
+#endif

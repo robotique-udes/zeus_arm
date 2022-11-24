@@ -1,3 +1,6 @@
+#ifndef _ENCODERS
+#define _ENCODERS
+
 #include <ams_as5048b.h>
 
 //********** ENCODER CLASS *************
@@ -9,6 +12,7 @@ class Encoder
     virtual void encoder_loop();
     
     virtual double get();
+    virtual double getAngle();
     virtual void set_zero(double offset);
 
     int sign = 1;
@@ -27,6 +31,7 @@ class Encoder_ams : public Encoder
     virtual void encoder_loop();
     
     virtual double get();
+    virtual double getAngle();
     virtual void set_zero(double offset);
 
   private:
@@ -61,12 +66,23 @@ void Encoder_ams::encoder_loop()
 
 double Encoder_ams::get()
 {
-  double pos_rad = _encoder.getMovingAvgExp(_unit)*sign;
-  if (isnan(pos_rad))
-    pos_rad = 0.;
-  if (pos_rad > M_PI)
-    pos_rad = pos_rad - (2*M_PI);
-  return pos_rad*sign + _offset;
+  double pos = _encoder.getMovingAvgExp(_unit)*sign + _offset;
+  if (isnan(pos))
+    pos = 0.;
+  return pos;
+}
+
+double Encoder_ams::getAngle()
+{
+  if (_unit == U_DEG) 
+  {
+    double posDeg = this->get();
+    return fmod(posDeg, 360);
+  }
+  
+  double posRad = this->get();
+  return fmod(posRad, (2*M_PI));
+
 }
 
 void Encoder_ams::set_zero(double offset)
@@ -87,17 +103,22 @@ class Encoder_oth : public Encoder
     virtual void encoder_loop(){}
     
     virtual double get();
+    virtual double getAngle();
+    
     virtual void set_zero(double offset);
+
+    void modify_count();
 
   private:
     static Encoder_oth *instance;
     
     static void modify_count_ISR(); // function for interrupt (needs to be static)
-    void modify_count();
+
+    double pulse2pos(double counter);
     
     float _ratio;
     int _ch_a, _ch_b;
-    int _counter;
+    double _counter;
 };
 
 
@@ -113,11 +134,12 @@ Encoder_oth::Encoder_oth(int channel_a, int channel_b, long counts_per_rev, bool
   instance = this;
 
   //Interrupt pin correct values 2, 3, 18, 19
-  attachInterrupt(digitalPinToInterrupt(channel_a), Encoder_oth::modify_count_ISR, RISING);
+  //attachInterrupt(digitalPinToInterrupt(channel_a), Encoder_oth::modify_count_ISR, RISING);
 
   if (switch_sign)
     sign = -1;
 }
+
 
 // Forward to non-static member function.
 void Encoder_oth::modify_count_ISR()
@@ -130,15 +152,23 @@ void Encoder_oth::modify_count()
 {
   int b = digitalRead(_ch_b);
   
-  if(b>0) _counter++;
-  else _counter--;
+  if(b>0) _counter += 1*sign;
+  else _counter -= 1*sign;
 }
 
 double Encoder_oth::get()
 {
-  double pos_rad = fmod((_counter * _ratio),(2*M_PI));
-  
-  return (pos_rad*sign + _offset);
+  return (pulse2pos(_counter)*sign + _offset);
+}
+
+double Encoder_oth::pulse2pos(double counter)
+{
+  return counter * _ratio;
+}
+
+double Encoder_oth::getAngle()
+{  
+  return fmod(get(), 2*M_PI);
 }
 
 void Encoder_oth::set_zero(double offset)
@@ -151,3 +181,5 @@ void Encoder_oth::set_zero(double offset)
 // https://forum.arduino.cc/t/using-an-interrupt-from-a-method-inside-a-class/486521
 
 Encoder_oth* Encoder_oth::instance = NULL;
+
+#endif

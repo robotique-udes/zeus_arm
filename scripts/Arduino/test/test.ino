@@ -16,7 +16,7 @@
 
 #include "Encoder.h"
 #include "Limitswitch.h"
-#include "Joint.h"
+#include "SingleJoint.h"
 /********************** Includes **********************/
 
 
@@ -25,77 +25,81 @@
 #define U_DEG 3
 #define U_RAD 4
 
-#define N_MOTORS 6
-#define N_ENCODERS 4
-#define N_LIMITSWITCH 5
+#define TIME_PERIOD_LOOP              2
+#define TIME_PERIOD_COM               500     //1000 ms after that it sends 0
 
-#define DT_ROS                        0.1      //Must be 1/100
-#define TIME_PERIOD_ROS               100      // 100 ms publishing rate loop
-#define TIME_PERIOD_COM               1000     //1000 ms after that it sends 0
+// PINS for joint 1
+const int CHA_J1 = 2, CHB_J1 = 3;
+const int PWM_MOTJ1 = 4, DIR_MOTJ1 = 10;
 
-const int counts_per_revolution       = 6533;
+// 3200 for joint 1 motor 
+// 700 for worm gear motor (43.8:1 * 16 pulse/rot, https://media.digikey.com/pdf/Data%20Sheets/DFRobot%20PDFs/FIT0186_Web.pdf)
+const int counts_per_revolution       = 700;
 unsigned long       time_last_low     = 0;
 unsigned long       time_now          = 0;
+
 float joint_pos;
 
-/********************** CALLBACKS **********************/
 
-Encoder* enc = new Encoder_oth(19, 18, counts_per_revolution * 2, true);
-Limitswitch* swtch = new Limitswitch(30, false);
-Motor* motj1 = new Motor_cytron(11, 12);
-Joint joint1(motj1, 0.3, 0.01, TIME_PERIOD_COM);
+Encoder_oth* enc = new Encoder_oth(CHA_J1, CHB_J1, counts_per_revolution, true);
+Motor_cytron* motj1 = new Motor_cytron(PWM_MOTJ1, DIR_MOTJ1);
+SingleJoint* joint = new SingleJoint(motj1, enc, 1, -1.2, TIME_PERIOD_COM, 0.07, 0, 0.001);
+
+// create ISR for each encoder and attach it
+void ISR_EncJoint1() { enc->modify_count(); }
+
   
 // Loops
-void Encoder_loop()
+void EncoderLoop()
 {
   enc->encoder_loop();
 }
 
-void Motor_loop()
+void MotorLoop()
 {
-  joint1.vel_setpoint = 0.5;
-  joint1.closed_loop_ctrl = true;
-  joint1.joint_loop();
-   
+  joint->BypassComm();
+  joint->JointLoop();
 }
 
-
-
 /********************** Arduino Loop **********************/
+bool test = true;
+double starttime;
 
 void setup() {
   // Use same baud as rosserial_arduino
   Serial.begin(57600);
 
+  while (!Serial) {}
 
-  joint1.setup_calib(enc, swtch, 0.04, -1, -2.16, 30000, 100, 25, 5);
-  
-  
+  // attach encoder ISR
+  attachInterrupt(digitalPinToInterrupt(CHA_J1), ISR_EncJoint1, RISING);
 
+  enc->set_zero(0);
   Serial.println("Setup");
+
+  joint->velSetpoint = 0;
+  starttime = millis();
 }
 
 void loop() {
   time_now = millis();
 
   // Encoder loop
-  Encoder_loop();
+  EncoderLoop();
 
-  // Motor loop
-  Motor_loop();
+  joint->CalculateActVel();
 
-  if ((time_now - time_last_low) > TIME_PERIOD_ROS )
+  // LOOOP 
+  if ((time_now - time_last_low) > TIME_PERIOD_LOOP )
   {
-    double pos = enc->get();
-      
-    joint1.actual_vel = (pos - joint_pos)/DT_ROS;
+    
 
-    joint_pos = pos;
+    if (millis() - starttime > 5000)
+      joint->velSetpoint = 4;
+    
+    MotorLoop();
+    
     time_last_low = time_now;
-
-    //Serial.print("actual_vel: ");
-    //Serial.println(joint1.actual_vel);
   }
-
   
 }

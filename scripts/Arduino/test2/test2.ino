@@ -14,7 +14,10 @@ unsigned long       time_now          = 0;
 void setup()
 {
   Serial.begin(57600);
-  pinMode(10, OUTPUT);
+  
+  while (!Serial) {}
+
+  TCCR3B = TCCR3B & 0b11111000 | 1;  // set 31KHz PWM to prevent motor noise
 }
 
 void loop()

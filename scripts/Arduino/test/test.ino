@@ -43,7 +43,7 @@ float joint_pos;
 
 Encoder_oth* enc = new Encoder_oth(CHA_J1, CHB_J1, counts_per_revolution, true);
 Motor_cytron* motj1 = new Motor_cytron(PWM_MOTJ1, DIR_MOTJ1);
-SingleJoint* joint = new SingleJoint(motj1, enc, 1, -1.2, TIME_PERIOD_COM, 0.07, 0, 0.001);
+SingleJoint* joint = new SingleJoint(motj1, enc, 1, -1.2, TIME_PERIOD_COM, 0.07, 0, 0.0);
 
 // create ISR for each encoder and attach it
 void ISR_EncJoint1() { enc->modify_count(); }
@@ -93,7 +93,6 @@ void loop() {
   if ((time_now - time_last_low) > TIME_PERIOD_LOOP )
   {
     
-
     if (millis() - starttime > 5000)
       joint->velSetpoint = 4;
     

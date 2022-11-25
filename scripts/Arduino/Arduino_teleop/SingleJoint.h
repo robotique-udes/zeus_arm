@@ -27,6 +27,15 @@ class SingleJoint : public Joint
 
     void CalculateActVel();
     virtual void JointLoop();
+
+
+    // for closed loop PID
+    float _kp, _kd, _ki;
+    double _previous_e, _ie;
+    float _max_ie;
+    long _previous_t;
+    void Compute();
+
     
   private:
     
@@ -63,9 +72,15 @@ SingleJoint::SingleJoint(Motor* motor, Encoder* enc, double maxSpeed, double max
   velSetpoint = 0;
 
   _controller.SetMode(AUTOMATIC);
+  _controller.SetSampleTime(1);
   _controller.SetOutputLimits(-255,255);
 
   _lastTime = millis();
+
+  _kp = kp;
+  _kd = kd;
+  _ki = ki;
+  _previous_t = 0;
 }
 
 
@@ -93,11 +108,9 @@ void SingleJoint::CalculateActVel()
     
     if (dt > 0.001)
     {
-      Serial.println("*");
       _lastTime = t;
   
       double pos = _encoder->get();
-      //Serial.println(pos);
       actualVel = ((pos - _previousPos) / dt) * 1000;
       _previousPos = pos;
     }
@@ -113,33 +126,70 @@ bool SingleJoint::ReachedMaxSpeed()
   return false;
 }
 
+
+
+void SingleJoint::Compute()
+{
+  double t = millis();
+  double dt = t - _previous_t;
+  double error = velSetpoint - actualVel; 
+ 
+  
+  if (dt > 0) 
+  {
+    //_ctrlCmd = 0;
+    // KP
+    _ctrlCmd = _kp*error;
+    
+    // KD
+    if (_kd != 0)
+    {
+      double d_e = (error-_previous_e)/dt;
+      _ctrlCmd += _kd*d_e;
+    }
+
+    // KI
+    if (_ki != 0)
+    {
+      _ie += error*dt;
+      _ctrlCmd += _ki*_ie;
+    }
+    
+    _previous_e = error;
+    _previous_t = t;
+  }
+ 
+}
+
+
+
+
 void SingleJoint::JointLoop()
 { 
 
   //pid if encoder not null else direct command
   //CalculateActVel();
 
-  Serial.print("Variable_1:");
+  Serial.print("actualVel:");
   Serial.print(actualVel);
-  Serial.print(",");
   
-
-  //Serial.print("Vel:");
-  //Serial.println(actualVel);
-
+  
   if (_closedLoopCtrl) 
   {
     _controller.Compute();
-    if (_ctrlCmd > 0.02)
-      _cmd += _ctrlCmd;
+    //Compute();
+    //if (_ctrlCmd > 0.02)
+    _cmd += _ctrlCmd;
 
   }
   else
     _cmd = velSetpoint; // takes in input -1 to 1 values
 
-
-  Serial.print("Variable_2:");
-  Serial.println(_ctrlCmd);
+  
+  Serial.print(",");
+  Serial.print("_cmd:");
+  Serial.println(_cmd);
+  
   
   if (_cmd > 255)
     _cmd = 255;
@@ -153,15 +203,10 @@ void SingleJoint::JointLoop()
   _bypassComm = false;
   */
 
-/*
-  Serial.print("Cmd2:");
-  Serial.println(_cmd);
-*/
-
   if (isnan(_cmd))
     resetFunc();
-    
-  _motor->set_speed_pwm(_cmd);
+
+  _motor->set_speed_pwm(_cmd);//_cmd);
   
   reachedMaxSpeed = ReachedMaxSpeed();
 

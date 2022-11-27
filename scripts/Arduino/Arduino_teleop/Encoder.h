@@ -15,6 +15,8 @@ class Encoder
     virtual double getAngle();
     virtual void set_zero(double offset);
 
+    virtual double debug() { return 0; }
+
     int sign = 1;
   protected:
     double _offset = 0.0;
@@ -98,7 +100,7 @@ void Encoder_ams::set_zero(double offset)
 class Encoder_oth : public Encoder
 {
   public:
-    Encoder_oth(int channel_a, int channel_b, long counts_per_rev, bool switch_sign);
+    Encoder_oth(int channel_a, int channel_b, double counts_per_rev, bool switch_sign);
     virtual void setup_enc(){}
     virtual void encoder_loop(){}
     
@@ -109,6 +111,8 @@ class Encoder_oth : public Encoder
 
     void modify_count();
 
+    double debug();
+
   private:
     static Encoder_oth *instance;
     
@@ -116,25 +120,20 @@ class Encoder_oth : public Encoder
 
     double pulse2pos(double counter);
     
-    float _ratio;
+    double _ratio;
     int _ch_a, _ch_b;
     double _counter;
 };
 
 
-Encoder_oth::Encoder_oth(int channel_a, int channel_b, long counts_per_rev, bool switch_sign = false)
-  : _ratio((2*M_PI)/counts_per_rev), _ch_a(channel_a), _ch_b(channel_b)
+Encoder_oth::Encoder_oth(int channel_a, int channel_b, double counts_per_rev, bool switch_sign = false)
+  : _ch_a(channel_a), _ch_b(channel_b)
 {
+  _ratio = (2*3.14159)/counts_per_rev;
   _counter = 0;
   
   pinMode(channel_a, INPUT_PULLUP);
   pinMode(channel_b, INPUT_PULLUP);
-
-  // give pointer to instance so it can call function modify count
-  instance = this;
-
-  //Interrupt pin correct values 2, 3, 18, 19
-  //attachInterrupt(digitalPinToInterrupt(channel_a), Encoder_oth::modify_count_ISR, RISING);
 
   if (switch_sign)
     sign = -1;
@@ -158,7 +157,7 @@ void Encoder_oth::modify_count()
 
 double Encoder_oth::get()
 {
-  return (pulse2pos(_counter)*sign + _offset);
+  return pulse2pos(_counter)*sign + _offset;
 }
 
 double Encoder_oth::pulse2pos(double counter)
@@ -177,9 +176,9 @@ void Encoder_oth::set_zero(double offset)
   _counter = 0;
 }
 
-// to explain why you need to do that go see here
-// https://forum.arduino.cc/t/using-an-interrupt-from-a-method-inside-a-class/486521
-
-Encoder_oth* Encoder_oth::instance = NULL;
+double Encoder_oth::debug() 
+{
+  return _counter;
+}
 
 #endif

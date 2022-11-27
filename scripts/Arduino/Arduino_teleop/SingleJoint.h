@@ -4,6 +4,7 @@
 #include "Motor.h"
 #include "Joint.h"
 #include "Encoder.h"
+#include "RunningAverage.h"
 
 #include <PID_v1.h>
 
@@ -28,16 +29,8 @@ class SingleJoint : public Joint
     void CalculateActVel();
     virtual void JointLoop();
 
-
-    // for closed loop PID
-    float _kp, _kd, _ki;
-    double _previous_e, _ie;
-    float _max_ie;
-    long _previous_t;
-    void Compute();
-
     
-  private:
+  //private:
     
     bool ReachedMaxSpeed();
 
@@ -54,12 +47,17 @@ class SingleJoint : public Joint
     Encoder* _encoder;
 
     void(* resetFunc) (void) = 0;
+
+    RunningAverage _RunnAvrgVel;
+
 };
 
 
 SingleJoint::SingleJoint(Motor* motor, Encoder* enc, double maxSpeed, double maxNegSpeed, 
   unsigned int timePeriodCom=1000, double kp=1, double ki=0, double kd=0)
-  : Joint(timePeriodCom), _motor(motor), _encoder(enc), _controller(&actualVel, &_ctrlCmd, &velSetpoint, kp, ki, kd, DIRECT)
+  : Joint(timePeriodCom), _motor(motor), _encoder(enc), 
+  _controller(&actualVel, &_ctrlCmd, &velSetpoint, kp, ki, kd, DIRECT),
+  _RunnAvrgVel(20)
 {   
   _maxSpeed = maxSpeed;
   _maxNegSpeed = maxNegSpeed;
@@ -75,12 +73,10 @@ SingleJoint::SingleJoint(Motor* motor, Encoder* enc, double maxSpeed, double max
   _controller.SetSampleTime(1);
   _controller.SetOutputLimits(-255,255);
 
-  _lastTime = millis();
+  _lastTime = 0;
 
-  _kp = kp;
-  _kd = kd;
-  _ki = ki;
-  _previous_t = 0;
+  _RunnAvrgVel.clear();
+
 }
 
 
@@ -89,6 +85,7 @@ void SingleJoint::setGains(double kp, double ki, double kd)
   _controller = PID(&actualVel, &_ctrlCmd, &velSetpoint, kp, ki, kd, DIRECT);
   _controller.SetMode(AUTOMATIC);
   _controller.SetOutputLimits(-255,255);
+  _controller.SetSampleTime(1);
 }
 
 
@@ -103,15 +100,20 @@ void SingleJoint::CalculateActVel()
     Serial.println("----------");
     Serial.print(millis());
     Serial.print(" : ");
-    Serial.println(dt);
-    */
+    Serial.println(dt);*/
     
-    if (dt > 0.001)
+    
+    if (dt > 1)
     {
       _lastTime = t;
-  
+
       double pos = _encoder->get();
-      actualVel = ((pos - _previousPos) / dt) * 1000;
+
+      double vel = ((pos - _previousPos) / dt) * 1000;
+      _RunnAvrgVel.addValue(vel);
+      actualVel = _RunnAvrgVel.getAverage();
+
+
       _previousPos = pos;
     }
   }
@@ -128,85 +130,46 @@ bool SingleJoint::ReachedMaxSpeed()
 
 
 
-void SingleJoint::Compute()
-{
-  double t = millis();
-  double dt = t - _previous_t;
-  double error = velSetpoint - actualVel; 
- 
-  
-  if (dt > 0) 
-  {
-    //_ctrlCmd = 0;
-    // KP
-    _ctrlCmd = _kp*error;
-    
-    // KD
-    if (_kd != 0)
-    {
-      double d_e = (error-_previous_e)/dt;
-      _ctrlCmd += _kd*d_e;
-    }
-
-    // KI
-    if (_ki != 0)
-    {
-      _ie += error*dt;
-      _ctrlCmd += _ki*_ie;
-    }
-    
-    _previous_e = error;
-    _previous_t = t;
-  }
- 
-}
-
-
-
-
 void SingleJoint::JointLoop()
 { 
 
-  //pid if encoder not null else direct command
+  //Make sur its called as fast as it can go
   //CalculateActVel();
 
   Serial.print("actualVel:");
-  Serial.print(actualVel);
-  
+  Serial.print(actualVel,6);
+
+  Serial.print(",");
+  Serial.print("setpoint:");
+  Serial.println(velSetpoint);
+
+
   
   if (_closedLoopCtrl) 
   {
     _controller.Compute();
-    //Compute();
-    //if (_ctrlCmd > 0.02)
     _cmd += _ctrlCmd;
 
   }
   else
     _cmd = velSetpoint; // takes in input -1 to 1 values
-
-  
-  Serial.print(",");
-  Serial.print("_cmd:");
-  Serial.println(_cmd);
-  
   
   if (_cmd > 255)
     _cmd = 255;
   if (_cmd < -255)
     _cmd = -255;
 
-  /*
+  
   AxLimits();
   if (!_bypassComm)
     CheckForComm();
   _bypassComm = false;
-  */
+
 
   if (isnan(_cmd))
     resetFunc();
 
-  _motor->set_speed_pwm(_cmd);//_cmd);
+  _motor->set_speed_pwm(_cmd);
   
   reachedMaxSpeed = ReachedMaxSpeed();
 

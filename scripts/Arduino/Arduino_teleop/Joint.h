@@ -34,7 +34,7 @@ class Joint
 
     double Debug();
 
-  protected:
+  //protected:
     bool _closedLoopCtrl = false;
     double _cmd = 0.0;
     

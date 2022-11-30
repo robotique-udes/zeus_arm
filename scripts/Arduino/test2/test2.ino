@@ -18,6 +18,7 @@
 #include "Limitswitch.h"
 #include "SingleJoint.h"
 #include "DifferentialJoint.h"
+#include "Motor.h"
 /********************** Includes **********************/
 
 
@@ -53,7 +54,7 @@ const int CHA_J1    = 2, CHB_J1 = 3;
 const int PWM_MOTJ1 = 4, DIR_MOTJ1 = 10;
 const int SWTCH_J1  = 30;
 Encoder_oth* encJ1  = new Encoder_oth(CHA_J1, CHB_J1, counts_per_revolution, true);
-Motor_cytron* motJ1 = new Motor_cytron(PWM_MOTJ1, DIR_MOTJ1);
+Motor* motJ1 = new Motor_cytron(PWM_MOTJ1, DIR_MOTJ1);
 SingleJoint* J1     = new SingleJoint(motJ1, NULL, TIME_PERIOD_COM, 0.5, 0, 0.002);
 Limitswitch* swtchJ1 = new Limitswitch(SWTCH_J1, false);
 
@@ -62,7 +63,7 @@ Limitswitch* swtchJ1 = new Limitswitch(SWTCH_J1, false);
 const int PWM_MOTJ2 = 5, DIR_MOTJ2 = 15;
 const int SWTCH_J2  = 31;
 Encoder_ams* encJ2 = new Encoder_ams(0x41, 50, U_RAD);
-Motor_cytron* motJ2 = new Motor_cytron(PWM_MOTJ2, DIR_MOTJ2);
+Motor* motJ2 = new Motor_cytron(PWM_MOTJ2, DIR_MOTJ2);
 SingleJoint* J2 = new SingleJoint(motJ2, NULL, TIME_PERIOD_COM, 0.5, 0, 0.02);
 Limitswitch* swtchJ2 = new Limitswitch(SWTCH_J2, false);
 
@@ -72,7 +73,7 @@ Limitswitch* swtchJ2 = new Limitswitch(SWTCH_J2, false);
 const int PWM_MOTJ3 = 6, DIR_MOTJ3 = 14;
 const int SWTCH_J3  = 32;
 Encoder_ams* encJ3 = new Encoder_ams(0x42, 50, U_RAD);
-Motor_cytron* motJ3 = new Motor_cytron(PWM_MOTJ3, DIR_MOTJ3);
+Motor* motJ3 = new Motor_cytron(PWM_MOTJ3, DIR_MOTJ3);
 SingleJoint* J3 = new SingleJoint(motJ3, NULL, TIME_PERIOD_COM, 0.5, 0, 0.02);
 Limitswitch* swtchJ3 = new Limitswitch(SWTCH_J3, false);
 
@@ -88,11 +89,11 @@ const int SWTCH_J45_1  = 33, SWTCH_J45_2 = 34;
 
 
 Encoder_oth* encJ45_1 = new Encoder_oth(CHA_J45_1, CHB_J45_1, counts_per_revolution, true);
-Motor_cytron* motJ45_1 = new Motor_cytron(PWM_MOTJ45_1, DIR_MOTJ45_1);
+Motor* motJ45_1 = new Motor_cytron(PWM_MOTJ45_1, DIR_MOTJ45_1);
 SingleJoint* J45_1 = new SingleJoint(motJ45_1, NULL, TIME_PERIOD_COM, 0.2, 0, 0.0);
 
 Encoder_oth* encJ45_2 = new Encoder_oth(CHA_J45_2, CHB_J45_2, counts_per_revolution, true);
-Motor_cytron* motJ45_2 = new Motor_cytron(PWM_MOTJ45_2, DIR_MOTJ45_2);
+Motor* motJ45_2 = new Motor_cytron(PWM_MOTJ45_2, DIR_MOTJ45_2);
 SingleJoint* J45_2 = new SingleJoint(motJ45_2, NULL, TIME_PERIOD_COM, 0.2, 0, 0.0);
 
 Limitswitch* swtchJ45_1 = new Limitswitch(SWTCH_J45_1, false);
@@ -102,8 +103,8 @@ DifferentialJoint* J45 = new DifferentialJoint(J45_1, J45_2, 0);
 
 // ---------------- J6 --------------------
 // PINS for joint 4 & 5 (diff joint)
-const int PWM_MOTJ6 = 9, DIR_MOTJ6 = 11;
-Motor_cytron* motJ6 = new Motor_cytron(PWM_MOTJ6, DIR_MOTJ6);
+const int PWM_MOTJ6 = 9;
+Motor* motJ6 = new Motor_talon(PWM_MOTJ6);
 SingleJoint* J6 = new SingleJoint(motJ6, NULL, TIME_PERIOD_COM, 0.5, 0, 0.02);
 
 

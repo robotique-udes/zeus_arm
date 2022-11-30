@@ -61,4 +61,41 @@ void Motor_cytron::set_speed_pwm(double pwm)
   _motor.setSpeed((int)pwm);
 }
 
+
+
+
+class Motor_talon : public Motor
+{
+  public:
+    Motor_talon(int pin_pwm);
+    virtual void setup();
+    virtual void set_speed(double pwm);
+  private: 
+    Servo _talon_controller;
+    int _pin_pwm;
+};
+
+
+Motor_talon::Motor_talon(int pin_pwm)
+{   
+  _pin_pwm = pin_pwm;
+}
+
+void Motor_talon::setup()
+{
+  _talon_controller.attach(_pin_pwm);
+}
+
+void Motor_talon::set_speed(double pwm)
+{
+  if (pwm > 1) pwm = 1;
+  if (pwm < -1) pwm = -1;
+  //Scale the setpoint to 1000 - 2000
+  //double cmd = pwm * 500 + 1500;
+  //Scale between 0 and 180;
+  double cmd = pwm * 90 + 90;
+  
+  _talon_controller.write(cmd);
+}
+
 #endif

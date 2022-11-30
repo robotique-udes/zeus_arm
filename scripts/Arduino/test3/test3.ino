@@ -25,5 +25,5 @@ void setup() {
 }
 
 void loop() {
-  mot->set_speed(-1);
+  mot->set_speed(-0.3);
 }

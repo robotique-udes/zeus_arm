@@ -22,8 +22,10 @@ void setup() {
 
   Serial.println("Setup");
 
+  mot->setup();
+
 }
 
 void loop() {
-  mot->set_speed(-0.3);
+  mot->set_speed(0.3);
 }

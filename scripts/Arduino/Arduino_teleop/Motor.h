@@ -70,9 +70,9 @@ class Motor_talon : public Motor
 {
   public:
     Motor_talon(int pin_pwm);
-    virtual void setup();
     virtual void set_speed(double relativeVel);
     virtual void set_speed_pwm(double pwm);
+    void setup();
   private: 
     Servo _talon_controller;
     int _pin_pwm;
@@ -91,13 +91,12 @@ void Motor_talon::setup()
 
 void Motor_talon::set_speed(double relativeVel)
 {
-  Serial.println(relativeVel);
-  if (relativeVel > 1) relativeVel = 1;
-  if (relativeVel < -1) relativeVel = -1;
-  //Scale the setpoint to 1000 - 2000
-  //double cmd = pwm * 500 + 1500;
+
   //Scale between 0 and 180;
   double cmd = relativeVel * 90 + 90;
+
+  if (relativeVel > 180) relativeVel = 180;
+  if (relativeVel < 0) relativeVel = 0;
   
   _talon_controller.write(cmd);
 }

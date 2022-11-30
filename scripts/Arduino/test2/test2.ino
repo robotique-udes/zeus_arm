@@ -148,7 +148,6 @@ void VelocityLoop()
 
 void MotorLoop()
 {
-  J1->BypassComm();
   J1->JointLoop();
   J2->JointLoop();
   J3->JointLoop();

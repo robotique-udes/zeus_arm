@@ -6,14 +6,13 @@
   #include <ams_as5048b.h>
 */
 
-#include <ams_as5048b.h>
+#include "Motor.h"
 /********************** Includes **********************/
 
 
 /********************** Constants **********************/
 
-
-AMS_AS5048B enc = AMS_AS5048B(0x42);
+Motor_talon* mot = new Motor_talon(9);
 
 void setup() {
   // Use same baud as rosserial_arduino
@@ -23,13 +22,8 @@ void setup() {
 
   Serial.println("Setup");
 
-  enc.toggleDebug();
-
-  enc.begin();
-
-  Serial.println("Setup2");
 }
 
 void loop() {
-  
+  mot->set_speed(-1);
 }

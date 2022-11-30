@@ -136,12 +136,12 @@ void SingleJoint::JointLoop()
   //Make sur its called as fast as it can go
   //CalculateActVel();
 
-  Serial.print("actualVel:");
+  /*Serial.print("actualVel:");
   Serial.print(actualVel,6);
 
   Serial.print(",");
   Serial.print("setpoint:");
-  Serial.print(velSetpoint);
+  Serial.println(velSetpoint);*/
 
   
   if (_closedLoopCtrl) 
@@ -173,9 +173,6 @@ void SingleJoint::JointLoop()
 
   if (_closedLoopCtrl)
   {
-    Serial.print(",");
-    Serial.print("_cmd:");
-    Serial.println(_cmd);
     _motor->set_speed_pwm(_cmd);
   }
   else

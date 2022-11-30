@@ -28,7 +28,7 @@
 
 #define N_JOINTS 6
 
-#define TIME_PERIOD_LOOP              5
+#define TIME_PERIOD_LOOP              25
 #define TIME_PERIOD_ROS               50
 #define TIME_PERIOD_COM               500     //1000 ms after that it sends 0
 
@@ -54,7 +54,7 @@ const int PWM_MOTJ1 = 4, DIR_MOTJ1 = 10;
 const int SWTCH_J1  = 30;
 Encoder_oth* encJ1  = new Encoder_oth(CHA_J1, CHB_J1, counts_per_revolution, true);
 Motor_cytron* motJ1 = new Motor_cytron(PWM_MOTJ1, DIR_MOTJ1);
-SingleJoint* J1     = new SingleJoint(motJ1, encJ1, TIME_PERIOD_COM, 0.5, 0, 0.02);
+SingleJoint* J1     = new SingleJoint(motJ1, NULL, TIME_PERIOD_COM, 0.5, 0, 0.002);
 Limitswitch* swtchJ1 = new Limitswitch(SWTCH_J1, false);
 
 
@@ -89,11 +89,11 @@ const int SWTCH_J45_1  = 33, SWTCH_J45_2 = 34;
 
 Encoder_oth* encJ45_1 = new Encoder_oth(CHA_J45_1, CHB_J45_1, counts_per_revolution, true);
 Motor_cytron* motJ45_1 = new Motor_cytron(PWM_MOTJ45_1, DIR_MOTJ45_1);
-SingleJoint* J45_1 = new SingleJoint(motJ45_1, encJ45_1, TIME_PERIOD_COM, 0.2, 0, 0.0);
+SingleJoint* J45_1 = new SingleJoint(motJ45_1, NULL, TIME_PERIOD_COM, 0.2, 0, 0.0);
 
 Encoder_oth* encJ45_2 = new Encoder_oth(CHA_J45_2, CHB_J45_2, counts_per_revolution, true);
 Motor_cytron* motJ45_2 = new Motor_cytron(PWM_MOTJ45_2, DIR_MOTJ45_2);
-SingleJoint* J45_2 = new SingleJoint(motJ45_2, encJ45_2, TIME_PERIOD_COM, 0.2, 0, 0.0);
+SingleJoint* J45_2 = new SingleJoint(motJ45_2, NULL, TIME_PERIOD_COM, 0.2, 0, 0.0);
 
 Limitswitch* swtchJ45_1 = new Limitswitch(SWTCH_J45_1, false);
 Limitswitch* swtchJ45_2 = new Limitswitch(SWTCH_J45_2, false);
@@ -147,12 +147,12 @@ void VelocityLoop()
 
 void MotorLoop()
 {
-  //J1->JointLoop();
-  //J2->JointLoop();
-  //J3->JointLoop();
-  J45->BypassComm();
+  J1->BypassComm();
+  J1->JointLoop();
+  J2->JointLoop();
+  J3->JointLoop();
   J45->JointLoop();
-  //J6->JointLoop();
+  J6->JointLoop();
 }
 
 
@@ -205,6 +205,7 @@ void setup() {
   encJ45_1->setup_enc();
   encJ45_2->setup_enc();
 
+  J1->velSetpoint = 0;
   J45->setVelSetpoint(0,0);
 
   // Init ROS stuff

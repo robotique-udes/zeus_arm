@@ -18,7 +18,7 @@
 
   <group unless="$(arg simulation)">
     <!-- Launch multimaster -->
-    <include file="$(find steve_control)/launch/multi_master.launch" />
+    <include file="$(find zeus_control)/launch/multi_master.launch" />
 
     <!-- Launch rosserial_arduino node -->
     <node name="arduino_serial" pkg="rosserial_arduino" type="serial_node.py">

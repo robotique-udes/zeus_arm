@@ -65,7 +65,7 @@ class TeleopNode():
         # # Add variables to ddr(name, description, default value, min, max, edit_method)        
         # # Model Settings (ALL IN RAD/S)
         self.ddr.add_variable("linear_speed", "float", 0.3, 0, np.pi/4)
-        self.ddr.add_variable("J1_speed", "float", 0.5, 0, np.pi/2) #joint has closed loop so in rad/s
+        self.ddr.add_variable("J1_speed", "float", 0.3, 0, 1) #joint has closed loop so in rad/s
         self.ddr.add_variable("J2_speed", "float", 1, 0, 1) #joint has open loop so 0 to 1
         self.ddr.add_variable("J3_speed", "float", 1, 0, 1) #joint has open loop so 0 to 1
         self.ddr.add_variable("J45_speed", "float", 0.3, 0, 1.)
@@ -106,7 +106,7 @@ class TeleopNode():
         ----------
         '''
         if time.time() - self.last_change > 0.3:
-            self.act_mode = (self.act_mode + 1)%len(self.mode-1) # to be rechanged since right now cant reach linear jog 
+            self.act_mode = (self.act_mode + 1)%(len(self.mode)-1) # to be rechanged since right now cant reach linear jog 
             rospy.loginfo("Changed mode to :\n\t"+self.mode[self.act_mode])
             self.last_change = time.time()
 
@@ -157,9 +157,9 @@ class TeleopNode():
         elif self.curr_joint == 2:
             cmd.linear.z = joy_cmd * self.J3_speed 
         elif self.curr_joint == 3:
-            cmd.angular.x = joy_cmd * self.J4_speed 
+            cmd.angular.x = joy_cmd * self.J45_speed 
         elif self.curr_joint == 4:
-            cmd.angular.y = joy_cmd * self.J5_speed 
+            cmd.angular.y = joy_cmd * self.J45_speed 
         elif self.curr_joint == 5:
             cmd.angular.z = joy_cmd * self.J6_speed
 
@@ -173,7 +173,7 @@ class TeleopNode():
         cmd.linear.x = msg.axes[0] * self.J1_speed 
         cmd.linear.y = msg.axes[1] * self.J2_speed 
         cmd.linear.z = msg.axes[3] * self.J3_speed 
-        cmd.angular.x = msg.axes[4] * self.J4_speed 
+        cmd.angular.x = msg.axes[4] * self.J45_speed 
         cmd.angular.y = 0 
         cmd.angular.z = 0
 

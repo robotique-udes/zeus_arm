@@ -15,7 +15,7 @@
 class SingleJoint : public Joint
 {
   public:
-    SingleJoint(Motor* motor, Encoder* enc, double maxSpeed, double maxNegSpeed, 
+    SingleJoint(Motor* motor, Encoder* enc, 
         unsigned int timePeriodCom, double kp, double ki, double kd);
     
     void setGains(double kp, double ki, double kd);
@@ -53,14 +53,14 @@ class SingleJoint : public Joint
 };
 
 
-SingleJoint::SingleJoint(Motor* motor, Encoder* enc, double maxSpeed, double maxNegSpeed, 
-  unsigned int timePeriodCom=1000, double kp=1, double ki=0, double kd=0)
+SingleJoint::SingleJoint(Motor* motor, Encoder* enc, unsigned int timePeriodCom=1000, 
+  double kp=1, double ki=0, double kd=0)
   : Joint(timePeriodCom), _motor(motor), _encoder(enc), 
   _controller(&actualVel, &_ctrlCmd, &velSetpoint, kp, ki, kd, DIRECT),
   _RunnAvrgVel(20)
 {   
-  _maxSpeed = maxSpeed;
-  _maxNegSpeed = maxNegSpeed;
+  //_maxSpeed = maxSpeed;
+  //_maxNegSpeed = maxNegSpeed;
 
   if (enc != NULL)
     _closedLoopCtrl = true;
@@ -141,8 +141,7 @@ void SingleJoint::JointLoop()
 
   Serial.print(",");
   Serial.print("setpoint:");
-  Serial.println(velSetpoint);
-
+  Serial.print(velSetpoint);
 
   
   if (_closedLoopCtrl) 
@@ -152,7 +151,10 @@ void SingleJoint::JointLoop()
 
   }
   else
+  {
     _cmd = velSetpoint; // takes in input -1 to 1 values
+    actualVel = velSetpoint;
+  }
   
   if (_cmd > 255)
     _cmd = 255;
@@ -169,10 +171,17 @@ void SingleJoint::JointLoop()
   if (isnan(_cmd))
     resetFunc();
 
-  _motor->set_speed_pwm(_cmd);
-  
-  reachedMaxSpeed = ReachedMaxSpeed();
+  if (_closedLoopCtrl)
+  {
+    Serial.print(",");
+    Serial.print("_cmd:");
+    Serial.println(_cmd);
+    _motor->set_speed_pwm(_cmd);
+  }
+  else
+    _motor->set_speed(_cmd);
 
+  reachedMaxSpeed = ReachedMaxSpeed();
   
 }
 

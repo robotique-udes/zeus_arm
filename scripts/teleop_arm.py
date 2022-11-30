@@ -65,12 +65,11 @@ class TeleopNode():
         # # Add variables to ddr(name, description, default value, min, max, edit_method)        
         # # Model Settings (ALL IN RAD/S)
         self.ddr.add_variable("linear_speed", "float", 0.3, 0, np.pi/4)
-        self.ddr.add_variable("J1_speed", "float", 0.5, 0, np.pi/2)
-        self.ddr.add_variable("J2_speed", "float", 0.5, 0, np.pi/2) 
-        self.ddr.add_variable("J3_speed", "float", 0.8, 0, np.pi/2)
-        self.ddr.add_variable("J4_speed", "float", 0.5, 0, np.pi/2)
-        self.ddr.add_variable("J5_speed", "float", 1., 0, 1.) # opened loop -1 to 1
-        self.ddr.add_variable("J6_speed", "float", 1., 0, 1.) # opened loop -1 to 1
+        self.ddr.add_variable("J1_speed", "float", 0.5, 0, np.pi/2) #joint has closed loop so in rad/s
+        self.ddr.add_variable("J2_speed", "float", 1, 0, 1) #joint has open loop so 0 to 1
+        self.ddr.add_variable("J3_speed", "float", 1, 0, 1) #joint has open loop so 0 to 1
+        self.ddr.add_variable("J45_speed", "float", 0.3, 0, 1.)
+        self.ddr.add_variable("J6_speed", "float", 1, 0, 1) # opened loop -1 to 1
 
 
         # # Start Server
@@ -107,7 +106,7 @@ class TeleopNode():
         ----------
         '''
         if time.time() - self.last_change > 0.3:
-            self.act_mode = (self.act_mode + 1)%len(self.mode)
+            self.act_mode = (self.act_mode + 1)%len(self.mode-1) # to be rechanged since right now cant reach linear jog 
             rospy.loginfo("Changed mode to :\n\t"+self.mode[self.act_mode])
             self.last_change = time.time()
 
@@ -228,68 +227,68 @@ class TeleopNode():
         # Check dead man switch
         if msg.buttons[5]:
 
-            # Send calibration signal if back/share button is clicked
-            if msg.buttons[6] or self.start_calib:
-                if not self.start_calib:
-                    self.start_calib = True
-                    rospy.loginfo("Entering calibration menu: \n->Choose with joints to calibrate"+ 
-                        "((Share) for all the joints, (A/X) for joint1, (B/Circle) for joint2, (X/Triangle) for joint3, (Y/Square) for joint4)")
-                else:
-                    # Remove deadmanswitch and share
-                    buttons = np.array(msg.buttons)
-                    buttons[5], buttons[6] = 0, 0
-                    if buttons.any():
-                        if msg.buttons[7]: 
-                            self.calib_pub.publish(Int16(0))
-                            rospy.loginfo("Sending calibration command : 0")
-                        elif msg.buttons[0]:
-                            self.calib_pub.publish(Int16(1))
-                            rospy.loginfo("Sending calibration command : 1")
-                        elif msg.buttons[1]:
-                            self.calib_pub.publish(Int16(2))
-                            rospy.loginfo("Sending calibration command : 2")
-                        elif msg.buttons[2]:
-                            self.calib_pub.publish(Int16(3))
-                            rospy.loginfo("Sending calibration command : 3")
-                        elif msg.buttons[3]:
-                            self.calib_pub.publish(Int16(4))
-                            rospy.loginfo("Sending calibration command : 4")
-                        else:
-                            rospy.loginfo("Quitting calibration menu ...")
-                        self.start_calib = False
+            ## Send calibration signal if back/share button is clicked
+            # if msg.buttons[6] or self.start_calib:
+            #     if not self.start_calib:
+            #         self.start_calib = True
+            #         rospy.loginfo("Entering calibration menu: \n->Choose with joints to calibrate"+ 
+            #             "((Share) for all the joints, (A/X) for joint1, (B/Circle) for joint2, (X/Triangle) for joint3, (Y/Square) for joint4)")
+            #     else:
+            #         # Remove deadmanswitch and share
+            #         buttons = np.array(msg.buttons)
+            #         buttons[5], buttons[6] = 0, 0
+            #         if buttons.any():
+            #             if msg.buttons[7]: 
+            #                 self.calib_pub.publish(Int16(0))
+            #                 rospy.loginfo("Sending calibration command : 0")
+            #             elif msg.buttons[0]:
+            #                 self.calib_pub.publish(Int16(1))
+            #                 rospy.loginfo("Sending calibration command : 1")
+            #             elif msg.buttons[1]:
+            #                 self.calib_pub.publish(Int16(2))
+            #                 rospy.loginfo("Sending calibration command : 2")
+            #             elif msg.buttons[2]:
+            #                 self.calib_pub.publish(Int16(3))
+            #                 rospy.loginfo("Sending calibration command : 3")
+            #             elif msg.buttons[3]:
+            #                 self.calib_pub.publish(Int16(4))
+            #                 rospy.loginfo("Sending calibration command : 4")
+            #             else:
+            #                 rospy.loginfo("Quitting calibration menu ...")
+            #             self.start_calib = False
 
-            else:
+            # else:
 
-                # Change mode if options button is clicked
-                if msg.buttons[7]:
-                    self.change_mode()
+            # Change mode if options button is clicked
+            if msg.buttons[7]:
+                self.change_mode()
 
-                # Depends on which mode is activated
+            # Depends on which mode is activated
 
-                # Teleop 1 joint at a time (Default)
-                if self.act_mode == 0: 
-                    if msg.buttons[0]:
-                        self.change_joint(1)
-                    elif msg.buttons[3]:
-                        self.change_joint(-1)
+            # Teleop 1 joint at a time (Default)
+            if self.act_mode == 0: 
+                if msg.buttons[0]:
+                    self.change_joint(1)
+                elif msg.buttons[3]:
+                    self.change_joint(-1)
 
-                    cmd = self.send_cmd_teleop_simple(msg) 
-                    self.cmd_pub.publish(cmd)
+                cmd = self.send_cmd_teleop_simple(msg) 
+                self.cmd_pub.publish(cmd)
 
-                # Teleop multiple joints at same time
-                elif self.act_mode == 1: 
-                    cmd = self.send_cmd_teleop_multiple(msg)
-                    self.cmd_pub.publish(cmd)
+            # Teleop multiple joints at same time
+            elif self.act_mode == 1: 
+                cmd = self.send_cmd_teleop_multiple(msg)
+                self.cmd_pub.publish(cmd)
 
-                # Linear jog
-                elif self.act_mode == 2:
-                    # This mode sends a linear command directly to arm node instead of a twist
-                    # It will be converted and then sent as a twist in twist mux
-                    if msg.buttons[0] or msg.buttons[2]:
-                        self.change_axis()
+            # Linear jog
+            elif self.act_mode == 2:
+                # This mode sends a linear command directly to arm node instead of a twist
+                # It will be converted and then sent as a twist in twist mux
+                if msg.buttons[0] or msg.buttons[2]:
+                    self.change_axis()
 
-                    cmd = self.send_cmd_linear_jog(msg)
-                    self.cmd_pub_linear.publish(cmd)
+                cmd = self.send_cmd_linear_jog(msg)
+                self.cmd_pub_linear.publish(cmd)
             
 
 if __name__ == '__main__':

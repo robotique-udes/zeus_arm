@@ -101,7 +101,7 @@ class Encoder_oth : public Encoder
 {
   public:
     Encoder_oth(int channel_a, int channel_b, double counts_per_rev, bool switch_sign);
-    virtual void setup_enc(){}
+    virtual void setup_enc();
     virtual void encoder_loop(){}
     
     virtual double get();
@@ -113,11 +113,7 @@ class Encoder_oth : public Encoder
 
     double debug();
 
-  private:
-    static Encoder_oth *instance;
-    
-    static void modify_count_ISR(); // function for interrupt (needs to be static)
-
+  private:    
     double pulse2pos(double counter);
     
     double _ratio;
@@ -139,13 +135,12 @@ Encoder_oth::Encoder_oth(int channel_a, int channel_b, double counts_per_rev, bo
     sign = -1;
 }
 
-
-// Forward to non-static member function.
-void Encoder_oth::modify_count_ISR()
+void Encoder_oth::setup_enc() 
 {
-  if (instance)
-    instance->modify_count();
+  _counter = 0;
+  _offset = 0;
 }
+
 
 void Encoder_oth::modify_count()
 {

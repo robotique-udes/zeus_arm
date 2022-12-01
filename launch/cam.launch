@@ -1,7 +1,7 @@
 <?xml version='1.0'?>
 <launch>
   <node name="arm_cam" pkg="usb_cam" type="usb_cam_node" output="screen" >
-    <param name="video_device" value="/dev/video2" />
+    <param name="video_device" value="/dev/video0" />
     <param name="framerate" value="30" />
     <param name="image_width" value="1920" />
     <param name="image_height" value="1080" />
@@ -11,6 +11,7 @@
     <param name="io_method" value="mmap"/>
   </node>
 
+  <!--
   <node name="arm_cam-2" pkg="usb_cam" type="usb_cam_node" output="screen" >
     <param name="video_device" value="/dev/video4" />
     <param name="framerate" value="30" />
@@ -21,6 +22,7 @@
     <param name="brightness" value="128" />
     <param name="io_method" value="mmap"/>
   </node>
+  -->
 
   <node name = "arm_rqt" pkg = "rqt_gui" type = "rqt_gui" respawn = "false" output = "screen" args = "--perspective-file $(find zeus_arm)/config/zeus_arm_gui.perspective"/>  
 

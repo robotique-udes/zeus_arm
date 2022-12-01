@@ -68,7 +68,8 @@ class TeleopNode():
         self.ddr.add_variable("J1_speed", "float", 0.3, 0, 1.) #joint has closed loop so in rad/s
         self.ddr.add_variable("J2_speed", "float", 1., 0, 1.) #joint has open loop so 0 to 1
         self.ddr.add_variable("J3_speed", "float", 1., 0, 1.) #joint has open loop so 0 to 1
-        self.ddr.add_variable("J45_speed", "float", 0.3, 0, 1.)
+        self.ddr.add_variable("J4_speed", "float", 0.3, 0, 1.)
+        self.ddr.add_variable("J5_speed", "float", 0.2, 0, 1.)
         self.ddr.add_variable("J6_speed", "float", 0.65, 0, 1.) # opened loop -1 to 1
 
 
@@ -157,9 +158,9 @@ class TeleopNode():
         elif self.curr_joint == 2:
             cmd.linear.z = joy_cmd * self.J3_speed 
         elif self.curr_joint == 3:
-            cmd.angular.x = joy_cmd * self.J45_speed 
+            cmd.angular.x = joy_cmd * self.J4_speed 
         elif self.curr_joint == 4:
-            cmd.angular.y = joy_cmd * self.J45_speed 
+            cmd.angular.y = joy_cmd * self.J5_speed 
         elif self.curr_joint == 5:
             cmd.angular.z = joy_cmd * self.J6_speed
 

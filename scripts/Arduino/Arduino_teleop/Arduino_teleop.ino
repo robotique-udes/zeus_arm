@@ -87,7 +87,7 @@ const int CHA_J45_2 = 20, CHB_J45_2 = 21;
 const int PWM_MOTJ45_2 = 8, DIR_MOTJ45_2 = 13;
 const int SWTCH_J45_1  = 33, SWTCH_J45_2 = 34;
 // for talon drives
-const int MOT_PIN_J45_1 = 12, MOT_PIN_J45_2 = 11;
+const int MOT_PIN_J45_1 = 13, MOT_PIN_J45_2 = 11;
 
 Encoder_oth* encJ45_1 = new Encoder_oth(CHA_J45_1, CHB_J45_1, counts_per_revolution, true);
 Motor_talon* motJ45_1 = new Motor_talon(MOT_PIN_J45_1);
@@ -203,10 +203,10 @@ void setup() {
   encJ45_2->setup_enc();
 
   // set ax limits 
-  J2->set_ax_limit(swtchJ2, -1);
-  J3->set_ax_limit(swtchJ3, 1);
-  J45->set_ax_limit(swtchJ45_1, -1);
-  J45->set_ax_limit(swtchJ45_2, 1);
+  J2->setAxLimit(swtchJ2, -1);
+  J3->setAxLimit(swtchJ3, 1);
+  J45->setAxLimit(swtchJ45_1, -1);
+  J45->setAxLimit(swtchJ45_2, 1);
 
   motJ45_1->setup();
   motJ45_2->setup();
@@ -242,6 +242,8 @@ void loop() {
   {
     if (time_now - starttime > 3000)
       MotorLoop();
+
+    //motJ45_1->set_speed(-0.005);
       
     time_last_low = time_now;
   }

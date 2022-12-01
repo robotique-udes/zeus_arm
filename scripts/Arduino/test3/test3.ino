@@ -12,7 +12,9 @@
 
 /********************** Constants **********************/
 
-Motor_talon* mot = new Motor_talon(9);
+Motor_talon* mot = new Motor_talon(13);
+Motor_talon* mot2 = new Motor_talon(11);
+
 
 void setup() {
   // Use same baud as rosserial_arduino
@@ -23,9 +25,11 @@ void setup() {
   Serial.println("Setup");
 
   mot->setup();
+  mot2->setup();
 
 }
 
 void loop() {
-  mot->set_speed(0.3);
+  mot->set_speed(0);
+  mot2->set_speed(0);
 }

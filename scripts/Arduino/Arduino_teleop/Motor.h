@@ -95,10 +95,13 @@ void Motor_talon::set_speed(double relativeVel)
   //Scale between 0 and 180;
   double cmd = relativeVel * 90 + 90;
 
-  if (relativeVel > 180) relativeVel = 180;
-  if (relativeVel < 0) relativeVel = 0;
-  
-  _talon_controller.write(cmd);
+  if (cmd > 180) cmd = 180;
+  if (cmd < 0) cmd = 0;
+
+  if (cmd==90)
+    _talon_controller.write(0);
+  else
+    _talon_controller.write(cmd);
 }
 
 void Motor_talon::set_speed_pwm(double pwm)

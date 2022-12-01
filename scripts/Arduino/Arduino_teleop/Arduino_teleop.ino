@@ -114,11 +114,7 @@ void ISR_EncJ1() { encJ1->modify_count(); }
 void ISR_EncJ45_1() { encJ45_1->modify_count(); }
 void ISR_EncJ45_2() { encJ45_2->modify_count(); }
 
-// set ax limits 
-J2->set_ax_limit(swtchJ2, -1);
-J3->set_ax_limit(swtchJ3, 1);
-J45->set_ax_limit(swtchJ45_1, -1);
-J45->set_ax_limit(swtchJ45_2, 1);
+
 
 
 unsigned long       time_last_low     = 0;
@@ -205,6 +201,12 @@ void setup() {
   //encJ3->setup_enc();
   encJ45_1->setup_enc();
   encJ45_2->setup_enc();
+
+  // set ax limits 
+  J2->set_ax_limit(swtchJ2, -1);
+  J3->set_ax_limit(swtchJ3, 1);
+  J45->set_ax_limit(swtchJ45_1, -1);
+  J45->set_ax_limit(swtchJ45_2, 1);
 
   motJ45_1->setup();
   motJ45_2->setup();

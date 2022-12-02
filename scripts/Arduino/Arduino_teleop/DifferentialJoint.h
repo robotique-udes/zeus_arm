@@ -36,7 +36,7 @@ class DifferentialJoint : public Joint
 
     double _velSetpointJoint1 = 0.0, _velSetpointJoint2 = 0.0;
 
-    int jointActive;
+    int jointActive = 1;
 
 };
 

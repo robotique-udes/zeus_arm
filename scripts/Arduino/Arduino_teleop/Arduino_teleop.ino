@@ -52,7 +52,7 @@ const int counts_per_revolution       = 700;
 // PINS for joint 1
 const int CHA_J1    = 2, CHB_J1 = 3;
 const int PWM_MOTJ1 = 4, DIR_MOTJ1 = 10;
-const int SWTCH_J1  = 30;
+const int SWTCH_J1  = 26;
 Encoder_oth* encJ1  = new Encoder_oth(CHA_J1, CHB_J1, counts_per_revolution, true);
 Motor_cytron* motJ1 = new Motor_cytron(PWM_MOTJ1, DIR_MOTJ1);
 SingleJoint* J1     = new SingleJoint(motJ1, NULL, TIME_PERIOD_COM, 0.5, 0, 0.002);
@@ -61,21 +61,21 @@ Limitswitch* swtchJ1 = new Limitswitch(SWTCH_J1, false);
 
 // ----------------- J2 ------------------
 const int PWM_MOTJ2 = 5, DIR_MOTJ2 = 15;
-const int SWTCH_J2  = 31;
+const int SWTCH_J2  = 27;
 Encoder_ams* encJ2 = new Encoder_ams(0x41, 50, U_RAD);
 Motor_cytron* motJ2 = new Motor_cytron(PWM_MOTJ2, DIR_MOTJ2);
 SingleJoint* J2 = new SingleJoint(motJ2, NULL, TIME_PERIOD_COM, 0.5, 0, 0.02);
-Limitswitch* swtchJ2 = new Limitswitch(SWTCH_J2, false);
+Limitswitch* swtchJ2 = new Limitswitch(SWTCH_J2, true);
 
 
 
 // ----------------- J3 ------------------
 const int PWM_MOTJ3 = 6, DIR_MOTJ3 = 14;
-const int SWTCH_J3  = 32;
+const int SWTCH_J3  = 30;
 Encoder_ams* encJ3 = new Encoder_ams(0x42, 50, U_RAD);
 Motor_cytron* motJ3 = new Motor_cytron(PWM_MOTJ3, DIR_MOTJ3);
 SingleJoint* J3 = new SingleJoint(motJ3, NULL, TIME_PERIOD_COM, 0.5, 0, 0.02);
-Limitswitch* swtchJ3 = new Limitswitch(SWTCH_J3, false);
+Limitswitch* swtchJ3 = new Limitswitch(SWTCH_J3, true);
 
 
 
@@ -85,7 +85,7 @@ const int CHA_J45_1 = 18, CHB_J45_1 = 19;
 const int PWM_MOTJ45_1 = 7, DIR_MOTJ45_1 = 16;
 const int CHA_J45_2 = 20, CHB_J45_2 = 21;
 const int PWM_MOTJ45_2 = 8, DIR_MOTJ45_2 = 13;
-const int SWTCH_J45_1  = 33, SWTCH_J45_2 = 34;
+const int SWTCH_J45_1  = 28, SWTCH_J45_2 = 29;
 // for talon drives
 const int MOT_PIN_J45_1 = 13, MOT_PIN_J45_2 = 11;
 
@@ -97,8 +97,8 @@ Encoder_oth* encJ45_2 = new Encoder_oth(CHA_J45_2, CHB_J45_2, counts_per_revolut
 Motor_talon* motJ45_2 = new Motor_talon(MOT_PIN_J45_2);
 SingleJoint* J45_2 = new SingleJoint(motJ45_2, NULL, TIME_PERIOD_COM, 0.2, 0, 0.0);
 
-Limitswitch* swtchJ45_1 = new Limitswitch(SWTCH_J45_1, false);
-Limitswitch* swtchJ45_2 = new Limitswitch(SWTCH_J45_2, false);
+Limitswitch* swtchJ45_1 = new Limitswitch(SWTCH_J45_1, true);
+Limitswitch* swtchJ45_2 = new Limitswitch(SWTCH_J45_2, true);
 
 DifferentialJoint* J45 = new DifferentialJoint(J45_1, J45_2, 0);
 
@@ -205,8 +205,8 @@ void setup() {
   // set ax limits 
   J2->setAxLimit(swtchJ2, -1);
   J3->setAxLimit(swtchJ3, 1);
-  J45->setAxLimit(swtchJ45_1, -1);
-  J45->setAxLimit(swtchJ45_2, 1);
+  //J45->setAxLimit(swtchJ45_1, -1);
+  //J45->setAxLimit(swtchJ45_2, 1);
 
   motJ45_1->setup();
   motJ45_2->setup();
@@ -242,8 +242,6 @@ void loop() {
   {
     if (time_now - starttime > 3000)
       MotorLoop();
-
-    //motJ45_1->set_speed(-0.005);
       
     time_last_low = time_now;
   }
@@ -264,6 +262,8 @@ void loop() {
     joint_cmd[3] = J45_1->velSetpoint;
     joint_cmd[4] = J45_2->velSetpoint;
     joint_cmd[5] = J6->velSetpoint;
+
+    //joint_cmd[5] = J45->jointActive;
   
     joint_state.position = joint_cmd;
     joint_state.velocity = joint_vel;

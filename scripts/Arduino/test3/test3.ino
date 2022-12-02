@@ -6,14 +6,16 @@
   #include <ams_as5048b.h>
 */
 
+#include "Limitswitch.h"
 #include "Motor.h"
 /********************** Includes **********************/
 
 
 /********************** Constants **********************/
-
-Motor_talon* mot = new Motor_talon(13);
-Motor_talon* mot2 = new Motor_talon(11);
+Limitswitch* s1 = new Limitswitch(27, false);
+Limitswitch* s2 = new Limitswitch(30, false);
+Limitswitch* s3 = new Limitswitch(28, false);
+Limitswitch* s4 = new Limitswitch(29, false);
 
 
 void setup() {
@@ -24,12 +26,17 @@ void setup() {
 
   Serial.println("Setup");
 
-  mot->setup();
-  mot2->setup();
-
 }
 
 void loop() {
-  mot->set_speed(0);
-  mot2->set_speed(0);
+  Serial.print("S1 : ");
+  Serial.print(s1->get());
+  Serial.print(",S2 : ");
+  Serial.print(s2->get());
+  Serial.print(", S3 : ");
+  Serial.print(s3->get());
+  Serial.print(", S4 : ");
+  Serial.println(s4->get());
+  
+  delay(10);
 }
